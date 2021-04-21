@@ -46,6 +46,9 @@ if __name__ == '__main__':
 
     with open(file, 'rb') as f:
         alignSpikes = np.load(f)
+
+    alignSpikes = alignSpikes[:int(len(alignSpikes) * 1)]
+
     print("Data size:", len(alignSpikes), ",Sequence length:", len(alignSpikes[0]))
 
     train_data, val_data = train_test_split(
@@ -73,6 +76,7 @@ if __name__ == '__main__':
         print(model)
 
     else:
+        # print("nf", n_features)
         model = autoencoder.Autoencoder(seq_len=seq_len, n_features=n_features, embedding_dim=16)
         model = model.to(DEVICE)
 
@@ -84,7 +88,7 @@ if __name__ == '__main__':
             model,
             train_dataset=train_dataset,
             val_dataset=val_dataset,
-            n_epochs=3
+            n_epochs=7
         )
 
         plot_histroy(history)
