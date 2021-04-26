@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import copy
+from matplotlib import pyplot as plt
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -13,55 +14,51 @@ class Encoder(nn.Module):
     def __init__(self, seq_len, n_features, embedding_dim):
         super(Encoder, self).__init__()
 
-        self.seq_len, self.n_features = seq_len, n_features
-        self.embedding_dim, self.hidden_dim = embedding_dim, 2 * embedding_dim
-
-        # 1D CNN + Leaky ReLU + MaxPool
-        self.cnn = nn.Conv1d(self.seq_len, self.seq_len, 1)
+        self.cnn = nn.Conv1d(64, 64, kernel_size=1)
         self.LeakyReLU = nn.LeakyReLU()
-        self.max_pool = nn.MaxPool1d(1)
+
+        self.pool = nn.MaxPool1d(2)
 
         # First LSTM
-        self.rnn1 = nn.LSTM(
-            input_size=n_features,
-            hidden_size=self.hidden_dim,
+        self.lstm1 = nn.LSTM(
+            input_size=1,
+            hidden_size=32,
             num_layers=1,
             batch_first=True,
             # bidirectional=True,
         )
-        self.relu1 = nn.ReLU()
-        self.dropout1 = torch.nn.Dropout(0.3)
 
         # Second LSTM
-        self.rnn2 = nn.LSTM(
-            input_size=self.hidden_dim,
-            hidden_size=embedding_dim,
+        self.lstm2 = nn.LSTM(
+            input_size=1,
+            hidden_size=16,
             num_layers=1,
             batch_first=True,
             # bidirectional=True,
         )
-        self.relu2 = nn.ReLU()
-        self.dropout2 = torch.nn.Dropout(0.3)
 
     def forward(self, x):
-        x = x.reshape((1, self.seq_len, self.n_features))
+        x = x.reshape((1, -1, 1))
 
-        # 1D CNN + Leaky RELU + MaxPool
+        # Convolution + ReLu
         x = self.cnn(x)
+        x = x.reshape((1, 64, 1))
         x = self.LeakyReLU(x)
-        x = self.max_pool(x)
+
+        # Max Pooling
+        x = x.reshape((1, 1, 64))
+        x = self.pool(x)
+        x = x.reshape((1, 32, 1))
 
         # Fist LSTM
-        x, (_, _) = self.rnn1(x)
-        x = self.relu1(x)
-        x = self.dropout1(x)
+        _, (x, _) = self.lstm1(x)
+        x = x.reshape((1, 32, 1))
 
         # Second LSTM
-        _, (hidden_n, _) = self.rnn2(x)
-        hidden_n = self.relu2(hidden_n)
-        hidden_n = self.dropout2(hidden_n)
+        _, (x, _) = self.lstm2(x)
+        x = x.reshape((1, -1, 1))
 
-        return hidden_n.reshape((self.n_features, self.embedding_dim))
+        return x
 
 
 class Decoder(nn.Module):
@@ -69,55 +66,41 @@ class Decoder(nn.Module):
     def __init__(self, seq_len, input_dim, n_features):
         super(Decoder, self).__init__()
 
-        self.seq_len, self.input_dim = seq_len, input_dim
-        self.hidden_dim, self.n_features = 2 * input_dim, n_features
-
         # First LSTM
-        self.rnn1 = nn.LSTM(
-            input_size=input_dim,
-            hidden_size=input_dim,
+        self.lstm1 = nn.LSTM(
+            input_size=1,
+            hidden_size=32,
             num_layers=1,
             batch_first=True,
             # bidirectional=True,
         )
-        self.relu1 = nn.ReLU()
-        self.dropout1 = torch.nn.Dropout(0.3)
 
         # Second LSTM
-        self.rnn2 = nn.LSTM(
-            input_size=input_dim,
-            hidden_size=self.hidden_dim,
+        self.lstm2 = nn.LSTM(
+            input_size=1,
+            hidden_size=64,
             num_layers=1,
             batch_first=True,
             # bidirectional=True,
         )
-        self.relu2 = nn.ReLU()
-        self.dropout2 = torch.nn.Dropout(0.3)
 
-        # Deconvolution
-        self.de_cnn = nn.ConvTranspose1d(self.seq_len, self.seq_len, 1)
-
-        self.output_layer = nn.Linear(self.hidden_dim, n_features)
+        self.de_cnn = nn.ConvTranspose1d(64, 64, 1)
+        # self.output_layer = nn.Linear(64, 64)
 
     def forward(self, x):
-        x = x.repeat(self.seq_len, self.n_features)
-        x = x.reshape((self.n_features, self.seq_len, self.input_dim))
-
-        # First LSTM
-        x, (hidden_n, cell_n) = self.rnn1(x)
-        x = self.relu1(x)
-        x = self.dropout1(x)
+        # Fist LSTM
+        _, (x, _) = self.lstm1(x)
+        x = x.reshape((1, 32, 1))
 
         # Second LSTM
-        x, (hidden_n, cell_n) = self.rnn2(x)
-        x = self.relu2(x)
-        x = self.dropout2(x)
+        _, (x, _) = self.lstm2(x)
+        x = x.reshape((1, 64, 1))
 
-        # Deconvolution
+        # De-Convolution
         x = self.de_cnn(x)
+        x = x.reshape((-1, 1))
 
-        x = x.reshape((self.seq_len, self.hidden_dim))
-        return self.output_layer(x)
+        return x
 
 
 class Autoencoder(nn.Module):
@@ -217,3 +200,24 @@ def predict(model, dataset):
             predictions.append(seq_pred.cpu().numpy().flatten())
             losses.append(loss.item())
     return predictions, losses
+
+
+def test_reconstructions(model, test_dataset, max_graphs=15):
+    predictions, pred_losses = predict(model, test_dataset)
+
+    print("Number of test spikes:", len(test_dataset))
+    print("Average prediction loss:", sum(pred_losses) / len(pred_losses))
+
+    for i in range(min(len(test_dataset), max_graphs)):
+        plt.plot(test_dataset[i])
+        plt.plot(predictions[i])
+        plt.title("Test spike " + str(i))
+        plt.show()
+
+
+def encode_data(model, data):
+    data = data.shape(1, 64, 1)
+    model.encoder(data)
+    data = data.shape(64)
+
+    return data
