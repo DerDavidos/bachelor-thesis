@@ -3,21 +3,11 @@ import autoencoder
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
-from matplotlib import pyplot as plt
 import sys
+import pickle
+import test_model
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-def plot_histroy(history):
-    ax = plt.figure().gca()
-    ax.plot(history['train'])
-    ax.plot(history['val'])
-    plt.ylabel('Loss')
-    plt.xlabel('Epoch')
-    plt.legend(['train', 'test'])
-    plt.title('Loss over training epochs')
-    plt.show()
 
 
 def main():
@@ -29,7 +19,7 @@ def main():
 
     aligned_spikes = aligned_spikes[:int(len(aligned_spikes) * 1)]
 
-    print("Data size:", len(aligned_spikes), ",Sequence length:", len(aligned_spikes[0]))
+    print(f"Data size: {len(aligned_spikes)}, Sequence length: {len(aligned_spikes[0])}")
 
     train_data, val_data = train_test_split(
         aligned_spikes,
@@ -42,6 +32,9 @@ def main():
         test_size=0.33,
         # random_state=RANDOM_SEED
     )
+
+    with open("data/test_data", 'wb') as dat:
+        pickle.dump(test_data, dat, pickle.HIGHEST_PROTOCOL)
 
     train_dataset, seq_len, n_features = autoencoder.create_dataset(train_data)
     val_dataset, _, _ = autoencoder.create_dataset(val_data)
@@ -59,20 +52,22 @@ def main():
         model,
         train_dataset=train_dataset,
         val_dataset=val_dataset,
-        n_epochs=7
+        n_epochs=3
     )
-
-    plot_histroy(history)
 
     model_path = 'models/model.pth'
     torch.save(model, model_path)
+    print(f"Saved model to {model_path}.")
+
+    with open("data/history", 'wb') as his:
+        pickle.dump(history, his, pickle.HIGHEST_PROTOCOL)
 
     print()
     print("Example encoded data")
     print(model.encoder(train_dataset[0]))
     print()
 
-    autoencoder.test_reconstructions(model, test_dataset)
+    test_model.plot_training(model, history, test_dataset)
 
 
 if __name__ == '__main__':

@@ -14,7 +14,8 @@ class Encoder(nn.Module):
     def __init__(self, seq_len, n_features, embedding_dim):
         super(Encoder, self).__init__()
 
-        self.cnn = nn.Conv1d(64, 64, kernel_size=1)
+        self.cnn = nn.Conv1d(1, 1, kernel_size=5, padding=2)
+
         self.LeakyReLU = nn.LeakyReLU()
 
         self.pool = nn.MaxPool1d(2)
@@ -38,10 +39,11 @@ class Encoder(nn.Module):
         )
 
     def forward(self, x):
-        x = x.reshape((1, -1, 1))
+        x = x.reshape((1, 1, -1))
 
         # Convolution + ReLu
         x = self.cnn(x)
+
         x = x.reshape((1, 64, 1))
         x = self.LeakyReLU(x)
 
@@ -53,10 +55,11 @@ class Encoder(nn.Module):
         # Fist LSTM
         _, (x, _) = self.lstm1(x)
         x = x.reshape((1, 32, 1))
+        # x = x.reshape((2, 32, 1))
 
         # Second LSTM
         _, (x, _) = self.lstm2(x)
-        x = x.reshape((1, -1, 1))
+        x = x.reshape((1, 16, 1))
 
         return x
 
@@ -66,38 +69,18 @@ class Decoder(nn.Module):
     def __init__(self, seq_len, input_dim, n_features):
         super(Decoder, self).__init__()
 
-        # First LSTM
-        self.lstm1 = nn.LSTM(
-            input_size=1,
-            hidden_size=32,
-            num_layers=1,
-            batch_first=True,
-            # bidirectional=True,
-        )
+        self.up = nn.Upsample(64)
 
-        # Second LSTM
-        self.lstm2 = nn.LSTM(
-            input_size=1,
-            hidden_size=64,
-            num_layers=1,
-            batch_first=True,
-            # bidirectional=True,
-        )
-
-        self.de_cnn = nn.ConvTranspose1d(64, 64, 1)
+        self.de_cnn = nn.ConvTranspose1d(1, 1, kernel_size=5, padding=2)
         # self.output_layer = nn.Linear(64, 64)
 
     def forward(self, x):
-        # Fist LSTM
-        _, (x, _) = self.lstm1(x)
-        x = x.reshape((1, 32, 1))
-
-        # Second LSTM
-        _, (x, _) = self.lstm2(x)
-        x = x.reshape((1, 64, 1))
+        x = x.reshape(1, 1, -1)
+        x = self.up(x)
 
         # De-Convolution
         x = self.de_cnn(x)
+
         x = x.reshape((-1, 1))
 
         return x
@@ -221,3 +204,14 @@ def encode_data(model, data):
     data = data.shape(64)
 
     return data
+
+
+def plot_histroy(history):
+    ax = plt.figure().gca()
+    ax.plot(history['train'])
+    ax.plot(history['val'])
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['train', 'test'])
+    plt.title('Loss over training epochs')
+    plt.show()

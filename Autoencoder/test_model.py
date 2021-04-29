@@ -2,25 +2,29 @@ from autoencoder import Autoencoder, Encoder, Decoder
 import autoencoder
 import numpy as np
 import torch
+import pickle
+import autoencoder
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def main():
-    file = 'data/SimulationSpikes.npy'
-    # file = 'data/GeneratorSpikes.npy'
+def plot_training(model=None, history=None, test_data=None, test_data_file="data/test_data"):
+    if model is None:
+        model = torch.load('models/model.pth', map_location=torch.device(DEVICE))
+        model = model.to(DEVICE)
 
-    with open(file, 'rb') as f:
-        aligned_spikes = np.load(f)
+    if history is None:
+        with open("data/history", 'rb') as his:
+            history = pickle.load(his)
 
-    aligned_spikes = aligned_spikes[:min(int(len(aligned_spikes) * 0.1), 50)]
-
-    print(f"Data size: {len(aligned_spikes)}, Sequence length: {len(aligned_spikes[0])}")
-
-    test_dataset, seq_len, n_features = autoencoder.create_dataset(aligned_spikes)
-
-    model = torch.load('models/colab_model.pth', map_location=torch.device(DEVICE))
-    model = model.to(DEVICE)
+    if test_data is None:
+        with open(test_data_file, 'rb') as dat:
+            if ".npy" in test_data_file:
+                test_data = np.load(dat)
+                test_data = test_data[:max(len(test_data), 1000)]
+            else:
+                test_data = pickle.load(dat)
+        test_data, _, _ = autoencoder.create_dataset(test_data)
 
     print()
     print("Model architecture")
@@ -28,11 +32,14 @@ def main():
 
     print()
     print("Example encoded data")
-    print(model.encoder(test_dataset[0]))
+    print(model.encoder(test_data[0]))
     print()
 
-    autoencoder.test_reconstructions(model, test_dataset, max_graphs=20)
+    autoencoder.plot_histroy(history)
+    autoencoder.test_reconstructions(model, test_data)
 
 
 if __name__ == '__main__':
-    main()
+    # Can use 'Messungen' for testing when available
+    # plot_training(test_data_file="data/Messungen.npy")
+    plot_training(test_data_file="data/GeneratorSpikes.npy")
