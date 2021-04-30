@@ -11,8 +11,8 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def main():
-    # file = 'data/SimulationSpikes.npy'
-    file = 'data/GeneratorSpikes.npy'
+    file = 'data/SimulationSpikes.npy'
+    # file = 'data/GeneratorSpikes.npy'
 
     with open(file, 'rb') as f:
         aligned_spikes = np.load(f)
@@ -52,12 +52,9 @@ def main():
         model,
         train_dataset=train_dataset,
         val_dataset=val_dataset,
-        n_epochs=3
+        n_epochs=25,
+        model_path='models/model.pth'
     )
-
-    model_path = 'models/model.pth'
-    torch.save(model, model_path)
-    print(f"Saved model to {model_path}.")
 
     with open("data/history", 'wb') as his:
         pickle.dump(history, his, pickle.HIGHEST_PROTOCOL)

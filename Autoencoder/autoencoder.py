@@ -14,25 +14,25 @@ class Encoder(nn.Module):
     def __init__(self, seq_len, n_features, embedding_dim):
         super(Encoder, self).__init__()
 
-        self.cnn = nn.Conv1d(1, 1, kernel_size=5, padding=2)
+        self.convolution_1d = nn.Conv1d(1, 1, kernel_size=5, padding=2, padding_mode="reflect")
 
-        self.LeakyReLU = nn.LeakyReLU()
+        self.leaky_re_lu = nn.LeakyReLU()
 
-        self.pool = nn.MaxPool1d(2)
+        self.max_pooling = nn.MaxPool1d(2)
 
         # First LSTM
-        self.lstm1 = nn.LSTM(
+        self.lstm_1 = nn.LSTM(
             input_size=1,
-            hidden_size=32,
+            hidden_size=20,
             num_layers=1,
             batch_first=True,
             # bidirectional=True,
         )
 
         # Second LSTM
-        self.lstm2 = nn.LSTM(
+        self.lstm_2 = nn.LSTM(
             input_size=1,
-            hidden_size=16,
+            hidden_size=10,
             num_layers=1,
             batch_first=True,
             # bidirectional=True,
@@ -42,24 +42,23 @@ class Encoder(nn.Module):
         x = x.reshape((1, 1, -1))
 
         # Convolution + ReLu
-        x = self.cnn(x)
-
+        x = self.convolution_1d(x)
         x = x.reshape((1, 64, 1))
-        x = self.LeakyReLU(x)
+        x = self.leaky_re_lu(x)
 
         # Max Pooling
         x = x.reshape((1, 1, 64))
-        x = self.pool(x)
+        x = self.max_pooling(x)
         x = x.reshape((1, 32, 1))
 
         # Fist LSTM
-        _, (x, _) = self.lstm1(x)
-        x = x.reshape((1, 32, 1))
+        _, (x, _) = self.lstm_1(x)
+        x = x.reshape((1, 20, 1))
         # x = x.reshape((2, 32, 1))
 
         # Second LSTM
-        _, (x, _) = self.lstm2(x)
-        x = x.reshape((1, 16, 1))
+        _, (x, _) = self.lstm_2(x)
+        x = x.reshape((1, 10, 1))
 
         return x
 
@@ -69,17 +68,18 @@ class Decoder(nn.Module):
     def __init__(self, seq_len, input_dim, n_features):
         super(Decoder, self).__init__()
 
-        self.up = nn.Upsample(64)
+        self.up_sample = nn.Upsample(64)
 
-        self.de_cnn = nn.ConvTranspose1d(1, 1, kernel_size=5, padding=2)
-        # self.output_layer = nn.Linear(64, 64)
+        self.transpose_convolution_1d = nn.ConvTranspose1d(1, 1, kernel_size=5, padding=2)
 
     def forward(self, x):
         x = x.reshape(1, 1, -1)
-        x = self.up(x)
+
+        # Up sampeling
+        x = self.up_sample(x)
 
         # De-Convolution
-        x = self.de_cnn(x)
+        x = self.transpose_convolution_1d(x)
 
         x = x.reshape((-1, 1))
 
@@ -104,7 +104,7 @@ class Autoencoder(nn.Module):
         return x
 
 
-def train_model(model, train_dataset, val_dataset, n_epochs):
+def train_model(model, train_dataset, val_dataset, n_epochs, model_path=None):
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     criterion = nn.L1Loss(reduction='sum').to(DEVICE)
     history = dict(train=[], val=[])
@@ -112,7 +112,7 @@ def train_model(model, train_dataset, val_dataset, n_epochs):
     best_model_wts = copy.deepcopy(model.state_dict())
     best_loss = 10000.0
     len_dataset = len(train_dataset)
-    update_percent = max(1, int(len_dataset / 200))
+    update_percent = max(1, int(len_dataset / 100))
 
     for epoch in range(1, n_epochs + 1):
         print()
@@ -121,7 +121,7 @@ def train_model(model, train_dataset, val_dataset, n_epochs):
         train_losses = []
         for i, seq_true in enumerate(train_dataset, start=0):
             if i % update_percent == 0:
-                print("\r", round(i / len_dataset * 100, 2), "%", sep="", end="")
+                print("\r", int(i / len_dataset * 100), "%", sep="", end="")
             optimizer.zero_grad()
 
             seq_true = seq_true.to(DEVICE)
@@ -134,7 +134,7 @@ def train_model(model, train_dataset, val_dataset, n_epochs):
 
             train_losses.append(loss.item())
 
-        print("\r100%", sep="", end="")
+        print("\r100%", sep="")
 
         val_losses = []
         model = model.eval()
@@ -155,8 +155,12 @@ def train_model(model, train_dataset, val_dataset, n_epochs):
         if val_loss < best_loss:
             best_loss = val_loss
             best_model_wts = copy.deepcopy(model.state_dict())
-        print()
-        print(f'Epoch {epoch}: train loss {train_loss} val loss {val_loss}')
+
+            if model_path is not None:
+                torch.save(model, model_path)
+                print(f"Saved model to '{model_path}'.")
+
+        print(f'Epoch {epoch}: train loss {train_loss} validation loss {val_loss}')
 
     model.load_state_dict(best_model_wts)
     return model.eval(), history

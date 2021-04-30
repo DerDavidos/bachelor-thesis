@@ -21,7 +21,7 @@ def plot_training(model=None, history=None, test_data=None, test_data_file="data
         with open(test_data_file, 'rb') as dat:
             if ".npy" in test_data_file:
                 test_data = np.load(dat)
-                test_data = test_data[:max(len(test_data), 1000)]
+                test_data = test_data[:min(len(test_data), 1000)]
             else:
                 test_data = pickle.load(dat)
         test_data, _, _ = autoencoder.create_dataset(test_data)
@@ -42,4 +42,4 @@ def plot_training(model=None, history=None, test_data=None, test_data_file="data
 if __name__ == '__main__':
     # Can use 'Messungen' for testing when available
     # plot_training(test_data_file="data/Messungen.npy")
-    plot_training(test_data_file="data/GeneratorSpikes.npy")
+    plot_training()
