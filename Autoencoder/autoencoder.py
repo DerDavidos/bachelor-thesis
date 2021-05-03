@@ -9,18 +9,16 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Encoder(nn.Module):
 
-    def __init__(self, seq_len, n_features, embedding_dim):
+    def __init__(self):
         super(Encoder, self).__init__()
 
-        self.convolution_1d = nn.Conv1d(1, 1, kernel_size=5, padding=2, padding_mode="reflect")
-
+        self.convolution_1d = nn.Conv1d(1, 5, kernel_size=5, padding=2, padding_mode="circular")
         self.leaky_re_lu = nn.LeakyReLU()
-
         self.max_pooling = nn.MaxPool1d(2)
 
         # First LSTM
         self.lstm_1 = nn.LSTM(
-            input_size=1,
+            input_size=32,
             hidden_size=32,
             num_layers=1,
             batch_first=True,
@@ -29,81 +27,92 @@ class Encoder(nn.Module):
 
         # Second LSTM
         self.lstm_2 = nn.LSTM(
-            input_size=1,
+            input_size=32,
             hidden_size=16,
             num_layers=1,
             batch_first=True,
             # bidirectional=True,
         )
 
-    def forward(self, x):
-        x = x.reshape((1, 1, -1))
+    def forward(self, x, batch_size):
+        x = x.reshape((batch_size, 1, -1))
 
         # Convolution + ReLu
         x = self.convolution_1d(x)
-        x = x.reshape((1, 64, 1))
         x = self.leaky_re_lu(x)
 
         # Max Pooling
-        x = x.reshape((1, 1, 64))
         x = self.max_pooling(x)
-        x = x.reshape((1, 32, 1))
 
         # Fist LSTM
         _, (x, _) = self.lstm_1(x)
-        x = x.reshape((1, 32, 1))
-        # x = x.reshape((2, 32, 1))
+
+        x = x.reshape((batch_size, 1, -1))
 
         # Second LSTM
         _, (x, _) = self.lstm_2(x)
-        x = x.reshape((1, 16, 1))
+        x = x.reshape(batch_size, 16, 1)
 
         return x
 
 
 class Decoder(nn.Module):
 
-    def __init__(self, seq_len, input_dim, n_features):
+    def __init__(self):
         super(Decoder, self).__init__()
 
         self.up_sample = nn.Upsample(64)
 
-        self.transpose_convolution_1d = nn.ConvTranspose1d(1, 1, kernel_size=5, padding=2)
+        self.transpose_convolution_1d = nn.ConvTranspose1d(1, 5, kernel_size=5, padding=2)
+        self.transpose_convolution_1d_2 = nn.ConvTranspose1d(5, 1, kernel_size=1)
 
-    def forward(self, x):
-        x = x.reshape(1, 1, -1)
+    def forward(self, x, batch_size):
+        x = x.reshape(batch_size, 1, -1)
 
         # Up sampling
         x = self.up_sample(x)
 
         # De-Convolution
         x = self.transpose_convolution_1d(x)
-
-        x = x.reshape((-1, 1))
+        x = self.transpose_convolution_1d_2(x)
+        x = x.reshape((batch_size, -1, 1))
 
         return x
 
 
 class Autoencoder(nn.Module):
 
-    def __init__(self, seq_len, n_features, embedding_dim):
+    def __init__(self):
         super(Autoencoder, self).__init__()
 
         # seq_len = seq_len * 2
         # n_features = n_features * 2
 
-        self.encoder = Encoder(seq_len=seq_len, n_features=n_features, embedding_dim=embedding_dim).to(DEVICE)
-        self.decoder = Decoder(seq_len=seq_len, input_dim=embedding_dim, n_features=n_features).to(DEVICE)
+        self.__encoder = Encoder().to(DEVICE)
+        self.__decoder = Decoder().to(DEVICE)
 
     def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
+
+        if len(x.shape) == 2:
+            x = x.reshape(1, -1, 1)
+        batch_size = x.shape[0]
+        x = self.__encoder(x, batch_size)
+        x = self.__decoder(x, batch_size)
+
+        return x
+
+    def encode_data(self, x):
+        if len(x.shape) == 2:
+            x = x.reshape(1, -1, 1)
+        batch_size = x.shape[0]
+        x = x.reshape(batch_size, -1, 1)
+        x = self.__encoder(x, batch_size)
 
         return x
 
 
 def __train_model(model: Autoencoder, optimizer: torch.optim, criterion: nn, train_dataset: list,
-                  validation_dataset: list, update_percent: int):
+                  validation_dataset: list, update_percent: int, batch_size: int = 1):
     model = model.train()
     train_losses = []
     for i, seq_true in enumerate(train_dataset):
@@ -133,14 +142,14 @@ def __train_model(model: Autoencoder, optimizer: torch.optim, criterion: nn, tra
             loss = criterion(seq_pred, seq_true)
             validation_losses.append(loss.item())
 
-    train_loss = np.mean(train_losses)
-    validation_loss = np.mean(validation_losses)
+    train_loss = np.mean(train_losses) / batch_size
+    validation_loss = np.mean(validation_losses) / batch_size
 
     return train_loss, validation_loss
 
 
 def train_model(model: Autoencoder, train_dataset: list, validation_dataset: list, n_epochs: int,
-                model_path: str = None):
+                model_path: str = None, batch_size: int = 1):
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     criterion = nn.L1Loss(reduction='sum').to(DEVICE)
     history = dict(train=[], val=[])
@@ -153,9 +162,12 @@ def train_model(model: Autoencoder, train_dataset: list, validation_dataset: lis
         print()
         print("Epoch", epoch)
 
-        train_loss, validation_loss = __train_model(model=model, optimizer=optimizer, criterion=criterion,
-                                                    train_dataset=train_dataset, validation_dataset=validation_dataset,
-                                                    update_percent=update_percent)
+        train_loss, validation_loss = __train_model(model=model, optimizer=optimizer,
+                                                    criterion=criterion,
+                                                    train_dataset=train_dataset,
+                                                    validation_dataset=validation_dataset,
+                                                    update_percent=update_percent,
+                                                    batch_size=batch_size)
 
         if validation_loss < best_loss:
             best_loss = validation_loss
@@ -184,6 +196,8 @@ def predict(model: Autoencoder, dataset: list):
     with torch.no_grad():
         model = model.eval()
         for seq_true in dataset:
+            if len(seq_true.shape) == 2:
+                seq_true = seq_true.reshape(1, -1, 1)
             seq_true = seq_true.to(DEVICE)
             seq_pred = model(seq_true)
 
@@ -208,7 +222,7 @@ def test_reconstructions(model: Autoencoder, test_dataset: list, max_graphs: int
 
 
 def encode_data(model: Autoencoder, data: torch.Tensor):
-    data = model.encoder(data)
+    data = model.encode_data(data)
     data = data.reshape(-1).detach().numpy()
 
     return data

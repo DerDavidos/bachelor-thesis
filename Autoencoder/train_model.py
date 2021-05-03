@@ -12,6 +12,8 @@ def main():
     file = 'data/SimulationSpikes.npy'
     # file = 'data/GeneratorSpikes.npy'
 
+    batch_size = 64
+
     with open(file, 'rb') as f:
         aligned_spikes = np.load(f)
 
@@ -34,12 +36,13 @@ def main():
     with open("data/training/test_data", 'wb') as dat:
         pickle.dump(test_data, dat, pickle.HIGHEST_PROTOCOL)
 
-    train_dataset, seq_len, n_features = autoencoder.create_dataset(train_data)
-    val_dataset, _, _ = autoencoder.create_dataset(val_data)
-    test_dataset, _, _ = autoencoder.create_dataset(test_data)
+    train_data = [torch.tensor(s).unsqueeze(1).float() for s in train_data]
+    train_dataset = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True)
 
-    # print("nf", n_features)
-    model = autoencoder.Autoencoder(seq_len=seq_len, n_features=n_features, embedding_dim=16)
+    val_data = [torch.tensor(s).unsqueeze(1).float() for s in val_data]
+    val_dataset = torch.utils.data.DataLoader(val_data, batch_size=batch_size, shuffle=True)
+
+    model = autoencoder.Autoencoder()
     model = model.to(DEVICE)
 
     print()
@@ -51,11 +54,14 @@ def main():
         train_dataset=train_dataset,
         validation_dataset=val_dataset,
         n_epochs=25,
-        model_path='models/model.pth'
+        model_path='models/model.pth',
+        batch_size=batch_size,
     )
 
     with open("data/training/history", 'wb') as his:
         pickle.dump(history, his, pickle.HIGHEST_PROTOCOL)
+
+    test_dataset, _, _ = autoencoder.create_dataset(test_data)
 
     test_model.plot_training(model, history, test_dataset)
 
