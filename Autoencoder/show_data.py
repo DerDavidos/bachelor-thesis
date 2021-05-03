@@ -9,7 +9,7 @@ def main():
     print(aligned_spikes[0])
 
     print(aligned_spikes.shape)
-    for x in align_spikes:
+    for x in aligned_spikes:
         plt.plot(x)
 
     plt.show()

@@ -1,9 +1,7 @@
-from autoencoder import Autoencoder, Encoder, Decoder
 import autoencoder
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
-import sys
 import pickle
 import test_model
 
@@ -33,7 +31,7 @@ def main():
         # random_state=RANDOM_SEED
     )
 
-    with open("data/test_data", 'wb') as dat:
+    with open("data/training/test_data", 'wb') as dat:
         pickle.dump(test_data, dat, pickle.HIGHEST_PROTOCOL)
 
     train_dataset, seq_len, n_features = autoencoder.create_dataset(train_data)
@@ -51,18 +49,13 @@ def main():
     model, history = autoencoder.train_model(
         model,
         train_dataset=train_dataset,
-        val_dataset=val_dataset,
+        validation_dataset=val_dataset,
         n_epochs=25,
         model_path='models/model.pth'
     )
 
-    with open("data/history", 'wb') as his:
+    with open("data/training/history", 'wb') as his:
         pickle.dump(history, his, pickle.HIGHEST_PROTOCOL)
-
-    print()
-    print("Example encoded data")
-    print(model.encoder(train_dataset[0]))
-    print()
 
     test_model.plot_training(model, history, test_dataset)
 
