@@ -6,14 +6,15 @@ import autoencoder
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def plot_training(model: autoencoder.Autoencoder = None, history: dict = None, test_data: list = None,
-                  test_data_file: str = "data/training/test_data"):
+def plot_training(model: autoencoder.Autoencoder = None, history: dict = None,
+                  test_data: list = None,
+                  test_data_file: str = "training/test_data"):
     if model is None:
         model = torch.load('models/model.pth', map_location=torch.device(DEVICE))
         model = model.to(DEVICE)
 
     if history is None:
-        with open("data/training/history", 'rb') as his:
+        with open("training/history", 'rb') as his:
             history = pickle.load(his)
 
     if test_data is None:
@@ -30,7 +31,7 @@ def plot_training(model: autoencoder.Autoencoder = None, history: dict = None, t
     print(model)
 
     print()
-    print("Example encoded data")
+    print("Example encoded spikes")
     print(autoencoder.encode_data(model=model, data=test_data[0]))
     print()
 
@@ -40,5 +41,5 @@ def plot_training(model: autoencoder.Autoencoder = None, history: dict = None, t
 
 if __name__ == '__main__':
     # Can use 'Messungen' for testing when available
-    # plot_training(test_data_file="data/Messungen.npy")
+    # plot_training(test_data_file="spikes/Messungen.npy")
     plot_training()

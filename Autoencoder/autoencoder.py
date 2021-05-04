@@ -9,10 +9,10 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Encoder(nn.Module):
 
-    def __init__(self):
+    def __init__(self, embedded_dim):
         super(Encoder, self).__init__()
 
-        self.convolution_1d = nn.Conv1d(1, 5, kernel_size=5, padding=2, padding_mode="circular")
+        self.convolution_1d = nn.Conv1d(1, 5, kernel_size=11, padding=5, padding_mode="replicate")
         self.leaky_re_lu = nn.LeakyReLU()
         self.max_pooling = nn.MaxPool1d(2)
 
@@ -28,7 +28,7 @@ class Encoder(nn.Module):
         # Second LSTM
         self.lstm_2 = nn.LSTM(
             input_size=32,
-            hidden_size=16,
+            hidden_size=embedded_dim,
             num_layers=1,
             batch_first=True,
             # bidirectional=True,
@@ -51,7 +51,7 @@ class Encoder(nn.Module):
 
         # Second LSTM
         _, (x, _) = self.lstm_2(x)
-        x = x.reshape(batch_size, 16, 1)
+        x = x.reshape(batch_size, -1, 1)
 
         return x
 
@@ -63,7 +63,7 @@ class Decoder(nn.Module):
 
         self.up_sample = nn.Upsample(64)
 
-        self.transpose_convolution_1d = nn.ConvTranspose1d(1, 5, kernel_size=5, padding=2)
+        self.transpose_convolution_1d = nn.ConvTranspose1d(1, 5, kernel_size=11, padding=5)
         self.transpose_convolution_1d_2 = nn.ConvTranspose1d(5, 1, kernel_size=1)
 
     def forward(self, x, batch_size):
@@ -82,19 +82,18 @@ class Decoder(nn.Module):
 
 class Autoencoder(nn.Module):
 
-    def __init__(self):
+    def __init__(self, embedded_dim):
         super(Autoencoder, self).__init__()
 
-        # seq_len = seq_len * 2
-        # n_features = n_features * 2
+        self.embedded_dim = embedded_dim
 
-        self.__encoder = Encoder().to(DEVICE)
+        self.__encoder = Encoder(self.embedded_dim).to(DEVICE)
         self.__decoder = Decoder().to(DEVICE)
 
     def forward(self, x):
+        if len(x.shape) != 3:
+            raise SyntaxError("Wrong input dimension")
 
-        if len(x.shape) == 2:
-            x = x.reshape(1, -1, 1)
         batch_size = x.shape[0]
         x = self.__encoder(x, batch_size)
         x = self.__decoder(x, batch_size)
@@ -150,7 +149,7 @@ def __train_model(model: Autoencoder, optimizer: torch.optim, criterion: nn, tra
 
 def train_model(model: Autoencoder, train_dataset: list, validation_dataset: list, n_epochs: int,
                 model_path: str = None, batch_size: int = 1):
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
     criterion = nn.L1Loss(reduction='sum').to(DEVICE)
     history = dict(train=[], val=[])
 
@@ -178,6 +177,9 @@ def train_model(model: Autoencoder, train_dataset: list, validation_dataset: lis
                 print(f"Saved model to '{model_path}'.")
 
         print(f'Epoch {epoch}: train loss {train_loss} validation loss {validation_loss}')
+
+        history["train"].append(train_loss)
+        history["val"].append(validation_loss)
 
     model.load_state_dict(best_model_wts)
     return model.eval(), history

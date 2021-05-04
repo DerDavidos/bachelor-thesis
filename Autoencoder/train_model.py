@@ -9,8 +9,8 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def main():
-    file = 'data/SimulationSpikes.npy'
-    # file = 'data/GeneratorSpikes.npy'
+    file = 'spikes/SimulationSpikes.npy'
+    # file = 'spikes/GeneratorSpikes.npy'
 
     batch_size = 64
 
@@ -33,7 +33,7 @@ def main():
         # random_state=RANDOM_SEED
     )
 
-    with open("data/training/test_data", 'wb') as dat:
+    with open("training/test_data", 'wb') as dat:
         pickle.dump(test_data, dat, pickle.HIGHEST_PROTOCOL)
 
     train_data = [torch.tensor(s).unsqueeze(1).float() for s in train_data]
@@ -42,7 +42,7 @@ def main():
     val_data = [torch.tensor(s).unsqueeze(1).float() for s in val_data]
     val_dataset = torch.utils.data.DataLoader(val_data, batch_size=batch_size, shuffle=True)
 
-    model = autoencoder.Autoencoder()
+    model = autoencoder.Autoencoder(embedded_dim=16)
     model = model.to(DEVICE)
 
     print()
@@ -58,8 +58,10 @@ def main():
         batch_size=batch_size,
     )
 
-    with open("data/training/history", 'wb') as his:
+    with open("training/history", 'wb') as his:
         pickle.dump(history, his, pickle.HIGHEST_PROTOCOL)
+
+    print(history)
 
     test_dataset, _, _ = autoencoder.create_dataset(test_data)
 
