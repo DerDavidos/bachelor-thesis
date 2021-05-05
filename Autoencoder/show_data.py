@@ -22,7 +22,7 @@ def main():
         cluster[classes[i]].append(np.array(aligned_spikes[i]))
 
     for i in range(len(cluster)):
-        plt.title(f"Cluster {i + 1}")
+        plt.title(f"Cluster {i}")
         print(f"Cluster {i}: {len(cluster[i])} Spikes")
         for x in cluster[i]:
             plt.plot(x)

@@ -109,6 +109,15 @@ class Autoencoder(nn.Module):
 
         return x
 
+    def decode_data(self, x):
+        if len(x.shape) == 2:
+            x = x.reshape(1, -1, 1)
+        batch_size = x.shape[0]
+        x = x.reshape(batch_size, -1, 1)
+        x = self.__decoder(x, batch_size)
+
+        return x
+
 
 def __train_model(model: Autoencoder, optimizer: torch.optim, criterion: nn, train_dataset: list,
                   validation_dataset: list, update_percent: int, batch_size: int = 1):
@@ -186,7 +195,6 @@ def train_model(model: Autoencoder, train_dataset: list, validation_dataset: lis
 
 
 def create_dataset(sequences: list):
-    # sequences = df.astype(np.float32).to_numpy().tolist()
     dataset = [torch.tensor(s).unsqueeze(1).float() for s in sequences]
     _, seq_len, n_features = torch.stack(dataset).shape
     return dataset, seq_len, n_features
@@ -223,9 +231,30 @@ def test_reconstructions(model: Autoencoder, test_dataset: list, max_graphs: int
         plt.show()
 
 
-def encode_data(model: Autoencoder, data: torch.Tensor):
+def encode_data(model: Autoencoder, data: list, batch_size: int = 1):
+    data = np.array(data)
+    data = torch.tensor(data).float()
+    if len(data.shape) == 1:
+        data = data.reshape(-1, 1)
+    if len(data.shape) == 2:
+        data = data.reshape(batch_size, -1, 1)
+
     data = model.encode_data(data)
-    data = data.reshape(-1).detach().numpy()
+    data = data.reshape(batch_size, -1).detach().numpy()
+
+    return data
+
+
+def decode_data(model: Autoencoder, data: list, batch_size: int = 1):
+    data = np.array(data)
+    data = torch.tensor(data).float()
+    if len(data.shape) == 1:
+        data = data.reshape(-1, 1)
+    if len(data.shape) == 2:
+        data = data.reshape(batch_size, -1, 1)
+
+    data = model.decode_data(data)
+    data = data.reshape(batch_size, -1).detach().numpy()
 
     return data
 
