@@ -14,11 +14,19 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def main():
-    model = torch.load('models/model.pth', map_location=torch.device(DEVICE))
+    simulation = 0
+
+    model = torch.load(f'models/model_simulation_{simulation}.pth',
+                       map_location=torch.device(DEVICE))
     model = model.to(DEVICE)
 
-    file = 'spikes/SimulationSpikes.npy'
+    data = loadmat('../Matlab/1_SimDaten/ground_truth.mat')
+    classes = np.array(data["spike_classes"][simulation])
 
+    n_classes = len(set(classes))
+    print(f"Number of clusters: {n_classes}")
+
+    file = f"spikes/simulation_{simulation + 1}.npy"
     with open(file, 'rb') as f:
         aligned_spikes = np.load(f)
 
@@ -27,15 +35,16 @@ def main():
 
     kmeans = KMeans(
         init="random",
-        n_clusters=16,
+        n_clusters=n_classes,
     )
 
     kmeans.fit(encoded_data)
 
-    print(f"k-means inertia {kmeans.inertia_}")
+    print(f"k-means inertia: {kmeans.inertia_}")
 
     for i, x in enumerate(kmeans.cluster_centers_):
         plt.title(f"Center of Cluster {i}")
+        plt.ylim(-1, 1)
         plt.plot(x)
         plt.show()
 
@@ -45,6 +54,7 @@ def main():
 
     for i, x in enumerate(cluster_center_decoded):
         plt.title(f"Center of Cluster {i} decoded")
+        plt.ylim(-50, 50)
         plt.plot(x)
         plt.show()
 
@@ -52,8 +62,6 @@ def main():
     print(kmeans.labels_[:20])
 
     print("Compared to real labels (numbers do not line up)")
-    data = loadmat('../Matlab/1_SimDaten/ground_truth.mat')
-    classes = np.array(data["spike_classes"][0])
     print(classes[:20])
 
 

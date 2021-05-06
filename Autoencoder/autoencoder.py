@@ -9,8 +9,10 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Encoder(nn.Module):
 
-    def __init__(self, embedded_dim):
+    def __init__(self, input_dim, embedded_dim):
         super(Encoder, self).__init__()
+
+        hidden_dim = int(input_dim / 2)
 
         self.convolution_1d = nn.Conv1d(1, 5, kernel_size=11, padding=5, padding_mode="replicate")
         self.leaky_re_lu = nn.LeakyReLU()
@@ -18,8 +20,8 @@ class Encoder(nn.Module):
 
         # First LSTM
         self.lstm_1 = nn.LSTM(
-            input_size=32,
-            hidden_size=32,
+            input_size=hidden_dim,
+            hidden_size=hidden_dim,
             num_layers=1,
             batch_first=True,
             # bidirectional=True,
@@ -27,7 +29,7 @@ class Encoder(nn.Module):
 
         # Second LSTM
         self.lstm_2 = nn.LSTM(
-            input_size=32,
+            input_size=hidden_dim,
             hidden_size=embedded_dim,
             num_layers=1,
             batch_first=True,
@@ -58,10 +60,10 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
 
-    def __init__(self):
+    def __init__(self, output_dim):
         super(Decoder, self).__init__()
 
-        self.up_sample = nn.Upsample(64)
+        self.up_sample = nn.Upsample(output_dim)
 
         self.transpose_convolution_1d = nn.ConvTranspose1d(1, 5, kernel_size=11, padding=5)
         self.transpose_convolution_1d_2 = nn.ConvTranspose1d(5, 1, kernel_size=1)
@@ -82,13 +84,13 @@ class Decoder(nn.Module):
 
 class Autoencoder(nn.Module):
 
-    def __init__(self, embedded_dim):
+    def __init__(self, input_dim, embedded_dim):
         super(Autoencoder, self).__init__()
 
         self.embedded_dim = embedded_dim
 
-        self.__encoder = Encoder(self.embedded_dim).to(DEVICE)
-        self.__decoder = Decoder().to(DEVICE)
+        self.__encoder = Encoder(input_dim=input_dim, embedded_dim=self.embedded_dim).to(DEVICE)
+        self.__decoder = Decoder(output_dim=input_dim).to(DEVICE)
 
     def forward(self, x):
         if len(x.shape) != 3:

@@ -9,11 +9,11 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def main():
-    file = 'spikes/SimulationSpikes.npy'
-    # file = 'spikes/GeneratorSpikes.npy'
+    simulation = 0
 
     batch_size = 64
 
+    file = f"spikes/simulation_{simulation + 1}.npy"
     with open(file, 'rb') as f:
         aligned_spikes = np.load(f)
 
@@ -42,7 +42,7 @@ def main():
     val_data = [torch.tensor(s).unsqueeze(1).float() for s in val_data]
     val_dataset = torch.utils.data.DataLoader(val_data, batch_size=batch_size, shuffle=True)
 
-    model = autoencoder.Autoencoder(embedded_dim=16)
+    model = autoencoder.Autoencoder(input_dim=len(train_data[0]), embedded_dim=12)
     model = model.to(DEVICE)
 
     print()
@@ -54,7 +54,7 @@ def main():
         train_dataset=train_dataset,
         validation_dataset=val_dataset,
         n_epochs=25,
-        model_path='models/model.pth',
+        model_path=f'models/model_simulation_{simulation}.pth',
         batch_size=batch_size,
     )
 

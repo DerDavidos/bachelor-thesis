@@ -4,7 +4,9 @@ from mat4py import loadmat
 
 
 def main():
-    with open('spikes/SimulationSpikes.npy', 'rb') as f:
+    simulation = 0
+
+    with open(f'spikes/simulation_{simulation + 1}.npy', 'rb') as f:
         aligned_spikes = np.load(f)
 
     print(aligned_spikes.shape)
@@ -12,19 +14,20 @@ def main():
 
     data = loadmat('../Matlab/1_SimDaten/ground_truth.mat')
 
-    classes = data["spike_classes"][0]
+    classes = data["spike_classes"][simulation]
 
     cluster = {key: [] for key in classes}
 
     print(f"Number of Cluster: {len(cluster)}")
 
-    for i in range(min(1000, max_len)):
+    for i in range(min(100000, max_len)):
         cluster[classes[i]].append(np.array(aligned_spikes[i]))
 
     for i in range(len(cluster)):
         plt.title(f"Cluster {i}")
         print(f"Cluster {i}: {len(cluster[i])} Spikes")
         for x in cluster[i]:
+            plt.ylim(-50, 50)
             plt.plot(x)
         plt.show()
 
