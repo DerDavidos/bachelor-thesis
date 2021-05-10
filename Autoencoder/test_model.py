@@ -6,25 +6,18 @@ import autoencoder
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def plot_training(model: autoencoder.Autoencoder = None, history: dict = None,
-                  test_data: list = None,
-                  test_data_file: str = "training/test_data"):
-    if model is None:
-        model = torch.load('models/model.pth', map_location=torch.device(DEVICE))
-        model = model.to(DEVICE)
+def plot_training(simulation_number: int):
+    dictionary = f"models/simulation_{simulation_number}/"
 
-    if history is None:
-        with open("training/history", 'rb') as his:
-            history = pickle.load(his)
+    model = torch.load(f"{dictionary}model.pth", map_location=torch.device(DEVICE))
+    model = model.to(DEVICE)
 
-    if test_data is None:
-        with open(test_data_file, 'rb') as dat:
-            if ".npy" in test_data_file:
-                test_data = np.load(dat)
-                test_data = test_data[:min(len(test_data), 1000)]
-            else:
-                test_data = pickle.load(dat)
-        test_data, _, _ = autoencoder.create_dataset(test_data)
+    with open(f"{dictionary}history", 'rb') as his:
+        history = pickle.load(his)
+
+    with open(f"{dictionary}test_data", 'rb') as dat:
+        test_data = pickle.load(dat)
+    test_data, _, _ = autoencoder.create_dataset(test_data)
 
     print()
     print("Model architecture")
@@ -40,6 +33,4 @@ def plot_training(model: autoencoder.Autoencoder = None, history: dict = None,
 
 
 if __name__ == '__main__':
-    # Can use 'Messungen' for testing when available
-    # plot_training(test_data_file="spikes/Messungen.npy")
-    plot_training()
+    plot_training(simulation_number=0)

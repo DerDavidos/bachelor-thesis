@@ -23,11 +23,14 @@ def main():
     for i in range(min(100000, max_len)):
         cluster[classes[i]].append(np.array(aligned_spikes[i]))
 
+    all_min = min(cluster)
+    all_max = max(cluster)
+
     for i in range(len(cluster)):
         plt.title(f"Cluster {i}")
         print(f"Cluster {i}: {len(cluster[i])} Spikes")
         for x in cluster[i]:
-            plt.ylim(-50, 50)
+            #plt.ylim(all_min, all_max)
             plt.plot(x)
         plt.show()
 
