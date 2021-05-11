@@ -1,51 +1,40 @@
-# import matplotlib.pyplot as plt
-# from kneed import KneeLocator
-# from sklearn.datasets import make_blobs
-# from sklearn.metrics import silhouette_score
-# from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
-import autoencoder
 import torch
-import numpy as np
-from mat4py import loadmat
 from matplotlib import pyplot as plt
-import time
+import data_loader
+import autoencoder_functions
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+""""""""""""""""""""""""""""""""
+SIMULATION_NUMBER = 0
+""""""""""""""""""""""""""""""""
 
-def main():
-    simulation = 0
 
-    time_out_after_plot = 0.3
+def main(simulation_number):
+    # Load train and test data
+    train_data, test_data = data_loader.load_train_test_data(simulation_number=simulation_number)
 
-    model = torch.load(f'models/simulation_{simulation}/model.pth',
+    # Load model
+    model = torch.load(f'models/simulation_{simulation_number}/model.pth',
                        map_location=torch.device(DEVICE))
     model = model.to(DEVICE)
 
     # TODO: Ground truth
-    # data = loadmat('../Matlab/1_SimDaten/ground_truth.mat')
-    # classes = np.array(data["spike_classes"][simulation])
-
+    # Get Number of Classes for Simulation
+    # ground_truth = loadmat('../Matlab/1_SimDaten/ground_truth.mat')
+    # classes = np.array(ground_truth["spike_classes"][simulation])
     n_classes = 8
     # n_classes = len(set(classes))
-
     print(f"Number of clusters: {n_classes}")
 
-    file = f"spikes/simulation_{simulation}.npy"
-    with open(file, 'rb') as f:
-        aligned_spikes = np.load(f)
-
-    aligned_spikes = aligned_spikes[:int(len(aligned_spikes) * 1)]
-    encoded_data = autoencoder.encode_data(model, aligned_spikes, batch_size=len(aligned_spikes))
-
+    # Init KMeans and fit it to the sparse representation of the training data
     kmeans = KMeans(
         # init="random",
         n_clusters=n_classes,
     )
-
+    encoded_data = autoencoder_functions.encode_data(model, train_data, batch_size=len(train_data))
     kmeans.fit(encoded_data)
-
     print(f"k-means inertia: {kmeans.inertia_}")
 
     # min_in_cluster_centers = kmeans.cluster_centers_.min()
@@ -56,38 +45,39 @@ def main():
     #     plt.plot(x)
     #     plt.show()
     #     time.sleep(time_out_after_plot)
-
     # print(kmeans.cluster_centers_)
-    cluster_center_decoded = autoencoder.decode_data(model, kmeans.cluster_centers_,
-                                                     batch_size=len(kmeans.cluster_centers_))
 
-    min_in_aligned_spikes = aligned_spikes.min()
-    max_in_aligned_spikes = aligned_spikes.max()
-
+    # Plot the decoded center of each Class to see what kind of spikes it represents
+    cluster_center_decoded = autoencoder_functions.decode_data(model, kmeans.cluster_centers_,
+                                                               batch_size=len(
+                                                                   kmeans.cluster_centers_))
+    min_in_test_data = test_data.min()
+    max_in_test_data = test_data.max()
     for x in cluster_center_decoded:
         plt.plot(x)
     plt.legend(range(len(cluster_center_decoded)))
     plt.title(f"Center of Cluster decoded")
-    plt.ylim(min_in_aligned_spikes, max_in_aligned_spikes)
+    plt.ylim(min_in_test_data, max_in_test_data)
     plt.show()
 
-    for c in set(kmeans.labels_):
-        for i, spike in enumerate(aligned_spikes):
-            if kmeans.labels_[i] == c:
+    # Plot all spikes put in the same cluster
+    test_data_encoded = autoencoder_functions.encode_data(model, test_data,
+                                                          batch_size=len(test_data))
+    predictions = kmeans.predict(test_data_encoded)
+    for label in set(kmeans.labels_):
+        for i, spike in enumerate(test_data):
+            if predictions[i] == label:
                 plt.plot(spike)
-        plt.title(f"All spikes clustered into {c} (center of the cluster decoded in black)")
-        plt.ylim(min_in_aligned_spikes, max_in_aligned_spikes)
-        plt.plot(cluster_center_decoded[c], color="black", linewidth=3)
+        plt.title(f"All spikes clustered into {label} (center of the cluster decoded in black)")
+        plt.ylim(min_in_test_data, max_in_test_data)
+        plt.plot(cluster_center_decoded[label], color="black", linewidth=3)
         plt.show()
-        time.sleep(time_out_after_plot)
 
     # print("First 20 cluster labeled")
     # print(kmeans.labels_[:20])
     # print("Compared to real labels (numbers do not line up)")
     # print(classes[:20])
 
-    plt.show()
-
 
 if __name__ == '__main__':
-    main()
+    main(simulation_number=SIMULATION_NUMBER)
