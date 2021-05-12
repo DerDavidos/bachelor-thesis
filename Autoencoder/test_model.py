@@ -1,11 +1,13 @@
 import torch
 import pickle
 import autoencoder_functions
+import numpy as np
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 """"""""""""""""""""""""""""""""
 SIMULATION_NUMBER = 0
+TRAINED_WITH_CLUSTERING = True
 """"""""""""""""""""""""""""""""
 
 
@@ -21,8 +23,8 @@ def plot_training(simulation_number: int, trained_with_clustering: bool = False)
     with open(f"{directory}/train_history", 'rb') as his:
         history = pickle.load(his)
 
-    with open(f"{directory}/data/test_data", 'rb') as dat:
-        test_data = pickle.load(dat)
+    with open(f"data/simulation_{simulation_number}/test_data.npy", 'rb') as file:
+        test_data = np.load(file)
     test_data, _, _ = autoencoder_functions.create_dataset(test_data)
 
     print()
@@ -39,4 +41,5 @@ def plot_training(simulation_number: int, trained_with_clustering: bool = False)
 
 
 if __name__ == '__main__':
-    plot_training(simulation_number=SIMULATION_NUMBER)
+    plot_training(simulation_number=SIMULATION_NUMBER,
+                  trained_with_clustering=TRAINED_WITH_CLUSTERING)

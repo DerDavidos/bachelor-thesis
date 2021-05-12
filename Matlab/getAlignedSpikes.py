@@ -11,7 +11,8 @@ def main():
         spikes = eng.sendDataToPython(simulation + 1, nargout=1)
 
         np.save(
-            f"{pathlib.Path(__file__).parent.absolute()}/../Autoencoder/spikes/simulation_{simulation}",
+            f"{pathlib.Path(__file__).parent.absolute()}/../Autoencoder"
+            f"/spikes/simulation_{simulation}",
             np.array(spikes))
         print(f"Saved {simulation}")
         eng.close()

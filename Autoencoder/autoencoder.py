@@ -47,11 +47,10 @@ class Encoder(nn.Module):
         _, (x, _) = self.lstm_1(x)
 
         x = x.reshape((batch_size, 1, -1))
-
         # Second LSTM
         _, (x, _) = self.lstm_2(x)
-        x = x.reshape(batch_size, -1, 1)
 
+        x = x.reshape(batch_size, -1, 1)
         return x
 
 
