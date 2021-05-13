@@ -1,11 +1,12 @@
-from autoencoder import Autoencoder
+import copy
+
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
-import copy
 from sklearn.cluster import KMeans
-import math
+
 import autoencoder_functions
+from autoencoder import Autoencoder
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -69,30 +70,26 @@ class __ClusteringLoss:
         reconstruction_loss = nn.MSELoss().to(DEVICE)(seq_pred, seq_true)
 
         # Create spare representation and fit k-means on it
-        encode_seq_pred = autoencoder_functions.encode_data(model, seq_pred,
-                                                            batch_size=len(seq_pred))
+        encode_seq_true = autoencoder_functions.encode_data(model, seq_true,
+                                                            batch_size=len(seq_true))
 
-        self.kmeans.fit(encode_seq_pred)
+        self.kmeans.fit(encode_seq_true)
 
-        cluster_center_decoded = autoencoder_functions.decode_data(
-            model,
-            self.kmeans.cluster_centers_,
-            batch_size=len(
-                self.kmeans.cluster_centers_)
-        )
-
-        cluster_loss = []
+        all_cluster = []
         for label in set(self.kmeans.labels_):
             cluster = []
             for i, spike in enumerate(seq_true):
                 if self.kmeans.labels_[i] == label:
-                    cluster.append(
-                        math.sqrt(np.mean(
-                            abs(cluster_center_decoded[label] - np.array(spike).reshape(-1)))))
-            if len(cluster):
-                cluster_loss.append(np.mean(cluster))
-        cluster_loss = np.mean(cluster_loss)
-        loss = reconstruction_loss + (cluster_loss * 10)
+                    cluster.append(np.array(spike))
+            mean_cluster = np.mean(cluster, axis=0)
+            distances_in_cluster = []
+            for i, spike in enumerate(cluster):
+                distances_in_cluster.append(np.sqrt(np.abs(mean_cluster - spike)))
+            all_cluster.append(np.mean(distances_in_cluster))
+
+        cluster_loss = np.mean(all_cluster)
+
+        loss = reconstruction_loss + cluster_loss * 25
 
         return loss
 

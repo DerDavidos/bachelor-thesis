@@ -1,8 +1,9 @@
-from autoencoder import Autoencoder
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 from matplotlib import pyplot as plt
+
+from autoencoder import Autoencoder
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

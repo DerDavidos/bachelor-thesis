@@ -173,12 +173,14 @@ function ret = sendDataToPython(dataNo)
                 end
             end
             % Aligned-Frame Generator
-            if(max_pos - Settings.nStartAlign <= 0)
+            if((max_pos - Settings.nStartAlign) <= 0)
                 dX = abs(max_pos-Settings.nStartAlign);
                 PlaceHolder = zeros(1, dX);
-                Frame_SpikeAlign(i,:) = [PlaceHolder, Frame_SpikeIn(i,1:Settings.nFrameAlign-dX)];        
+                Frame_SpikeAlign(i,:) = [PlaceHolder, Frame_SpikeIn(i,1:Settings.nFrameAlign-dX)];
+            elseif((max_pos+Settings.nFrameAlign-Settings.nStartAlign-1) > Settings.nFrameAlign)
+                Frame_SpikeAlign(i,:) = U_denoise(XPks(i)+max_pos-Settings.nStartAlign:XPks(i)+max_pos+Settings.nFrameAlign-Settings.nStartAlign-1);
             else
-                Frame_SpikeAlign(i,:) = Frame_SpikeIn(i, max_pos-Settings.nStartAlign:max_pos+Settings.nFrameAlign-Settings.nStartAlign-1);        
+                Frame_SpikeAlign(i,:) = Frame_SpikeIn(i, max_pos-Settings.nStartAlign:max_pos+Settings.nFrameAlign-Settings.nStartAlign-1);
             end
         end
         clear SpikeIn max_val max_cnt max_pos k PlaceHolder dX;

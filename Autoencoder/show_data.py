@@ -1,6 +1,6 @@
 import numpy as np
-from matplotlib import pyplot as plt
 from mat4py import loadmat
+from matplotlib import pyplot as plt
 
 """"""""""""""""""""""""""""""""
 SIMULATION_NUMBER = 0
