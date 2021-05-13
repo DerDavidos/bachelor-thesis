@@ -89,7 +89,7 @@ class __ClusteringLoss:
                     cluster.append(
                         math.sqrt(np.mean(
                             abs(cluster_center_decoded[label] - np.array(spike).reshape(-1)))))
-            if len(cluster) != 0:
+            if len(cluster):
                 cluster_loss.append(np.mean(cluster))
         cluster_loss = np.mean(cluster_loss)
         loss = reconstruction_loss + (cluster_loss * 10)

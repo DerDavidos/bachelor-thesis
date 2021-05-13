@@ -2,11 +2,13 @@ import numpy as np
 from matplotlib import pyplot as plt
 from mat4py import loadmat
 
+""""""""""""""""""""""""""""""""
+SIMULATION_NUMBER = 0
+""""""""""""""""""""""""""""""""
 
-def main():
-    simulation = 0
 
-    with open(f'spikes/simulation_{simulation + 1}.npy', 'rb') as f:
+def show_data(simulation_number: int):
+    with open(f'spikes/simulation_{simulation_number + 1}.npy', 'rb') as f:
         aligned_spikes = np.load(f)
 
     print(aligned_spikes.shape)
@@ -14,7 +16,7 @@ def main():
 
     data = loadmat('../Matlab/1_SimDaten/ground_truth.mat')
 
-    classes = data["spike_classes"][simulation]
+    classes = data["spike_classes"][simulation_number]
 
     cluster = {key: [] for key in classes}
 
@@ -23,17 +25,14 @@ def main():
     for i in range(min(100000, max_len)):
         cluster[classes[i]].append(np.array(aligned_spikes[i]))
 
-    all_min = min(cluster)
-    all_max = max(cluster)
-
     for i in range(len(cluster)):
         plt.title(f"Cluster {i}")
         print(f"Cluster {i}: {len(cluster[i])} Spikes")
         for x in cluster[i]:
-            #plt.ylim(all_min, all_max)
+            plt.ylim(-60, 60)
             plt.plot(x)
         plt.show()
 
 
 if __name__ == '__main__':
-    main()
+    show_data(simulation_number=SIMULATION_NUMBER)

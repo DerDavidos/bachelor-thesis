@@ -16,32 +16,35 @@ TRAIN_WITH_CLUSTERING = False
 N_CLUSTER = 7
 BATCH_SIZE = 32
 EPOCHS = 500
-EARLY_STOPPING = 10
+EARLY_STOPPING = 15
 """"""""""""""""""""""""""""""""
 
 
 def main(simulation_number: int = 0, batch_size: int = 32, epochs: int = 1,
          train_with_clustering: bool = False,
          n_cluster: int = None, early_stopping: int = None):
-    # Save train, validation and test data
+
+    # Get train and validation data
     if train_with_clustering:
         directory = f"models/simulation_{simulation_number}_cluster_trained"
     else:
         directory = f"models/simulation_{simulation_number}"
     Path(directory).mkdir(parents=True, exist_ok=True)
 
-    test_data, validation_data, train_data = data_loader.load_train_val_test_data(
+    train_data, validation_data, _ = data_loader.load_train_val_test_data(
         simulation_number=simulation_number)
 
     # Transform train and validation data to tensors for training
     input_dim = len(train_data[0])
     train_data = train_data[:(len(train_data) - (len(train_data) % batch_size))]
+    if not len(train_data):
+        raise ValueError("Batch size to big for train split.")
     train_data = [torch.tensor(s).unsqueeze(1).float() for s in train_data]
     train_data = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True)
+
     validation_data = validation_data[:len(validation_data) - (len(validation_data) % batch_size)]
-    print(len(validation_data))
-    if len(train_data) == 0 or len(validation_data) == 0:
-        raise ValueError("Batch size to big.")
+    if not len(validation_data):
+        raise ValueError("Batch size to big for validation split.")
     validation_data = [torch.tensor(s).unsqueeze(1).float() for s in validation_data]
     validation_data = torch.utils.data.DataLoader(validation_data, batch_size=batch_size,
                                                   shuffle=True)
@@ -53,7 +56,7 @@ def main(simulation_number: int = 0, batch_size: int = 32, epochs: int = 1,
     print(model)
 
     # Train Autoencoder
-    model, history = autoencoder_training.train_model(
+    _, history = autoencoder_training.train_model(
         model,
         train_dataset=train_data,
         validation_dataset=validation_data,
