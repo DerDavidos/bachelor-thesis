@@ -15,22 +15,24 @@ class Encoder(nn.Module):
         self.leaky_re_lu = nn.LeakyReLU()
         self.max_pooling = nn.MaxPool1d(2)
 
+        a = int(hidden_dim / 2)
+        print(a)
         # First LSTM
         self.lstm_1 = nn.LSTM(
             input_size=hidden_dim,
-            hidden_size=hidden_dim,
+            hidden_size=int(hidden_dim / 2),
             num_layers=1,
             batch_first=True,
-            # bidirectional=True,
+            bidirectional=True,
         )
 
         # Second LSTM
         self.lstm_2 = nn.LSTM(
             input_size=hidden_dim,
-            hidden_size=embedded_dim,
+            hidden_size=int(embedded_dim / 2),
             num_layers=1,
             batch_first=True,
-            # bidirectional=True,
+            bidirectional=True,
         )
 
     def forward(self, x, batch_size):
@@ -45,12 +47,14 @@ class Encoder(nn.Module):
 
         # Fist LSTM
         _, (x, _) = self.lstm_1(x)
-
+        x = x.swapaxes(0, 1)
         x = x.reshape((batch_size, 1, -1))
+
         # Second LSTM
         _, (x, _) = self.lstm_2(x)
-
+        x = x.swapaxes(0, 1)
         x = x.reshape(batch_size, -1, 1)
+
         return x
 
 

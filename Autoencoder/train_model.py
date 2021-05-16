@@ -14,8 +14,8 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 """"""""""""""""""""""""""""""""
 SIMULATIONS_TO_TRAIN = range(0, 4 + 1)
-EMBEDDED_DIM = 3
-TRAIN_WITH_CLUSTERING = True
+EMBEDDED_DIM = 4
+TRAIN_WITH_CLUSTERING = False
 N_CLUSTER = None
 BATCH_SIZE = 64
 EPOCHS = 500

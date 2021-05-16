@@ -9,7 +9,7 @@ import pca
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 """"""""""""""""""""""""""""""""
-SIMULATION_NUMBER = 4
+SIMULATION_NUMBER = 0
 """"""""""""""""""""""""""""""""
 
 

@@ -7,11 +7,11 @@ from sklearn.model_selection import train_test_split
 
 def load_train_val_test_data(simulation_number: int):
     with open(f"data/simulation_{simulation_number}/train_data.npy", 'rb') as file:
-        train_data = np.load(file)
+        train_data = np.load(file, allow_pickle=True)
     with open(f"data/simulation_{simulation_number}/validation_data.npy", 'rb') as file:
-        validation_data = np.load(file)
+        validation_data = np.load(file, allow_pickle=True)
     with open(f"data/simulation_{simulation_number}/test_data.npy", 'rb') as file:
-        test_data = np.load(file)
+        test_data = np.load(file, allow_pickle=True)
 
     print(
         f"Train data size: {len(train_data)}, Test data size: {len(test_data)}, "
