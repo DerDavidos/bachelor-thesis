@@ -1,38 +1,28 @@
 import numpy as np
-from mat4py import loadmat
 from matplotlib import pyplot as plt
 
-""""""""""""""""""""""""""""""""
-SIMULATION_NUMBER = 0
-""""""""""""""""""""""""""""""""
+import config
 
 
-def show_data(simulation_number: int):
-    with open(f'spikes/simulation_{simulation_number + 1}.npy', 'rb') as f:
+def show_all_spikes():
+    suf = ""
+    if config.SIMULATION_TYPE == "own_generated":
+        suf = "_" + config.N_CLUSTER
+    with open(f'spikes/{config.SIMULATION_TYPE}/simulation_{config.SIMULATION_NUMBER}{suf}.npy',
+              'rb') as f:
         aligned_spikes = np.load(f)
 
     print(aligned_spikes.shape)
-    max_len = len(aligned_spikes)
 
-    data = loadmat('../Matlab/1_SimDaten/ground_truth.mat')
+    for x in aligned_spikes:
+        plt.plot(x)
 
-    classes = data["spike_classes"][simulation_number]
+    plt.title(f"All spikes in simulation {config.SIMULATION_NUMBER} from {config.SIMULATION_TYPE}")
+    plt.ylim(np.amin(aligned_spikes), np.amax(aligned_spikes))
+    plt.show()
 
-    cluster = {key: [] for key in classes}
-
-    print(f"Number of Cluster: {len(cluster)}")
-
-    for i in range(min(100000, max_len)):
-        cluster[classes[i]].append(np.array(aligned_spikes[i]))
-
-    for i in range(len(cluster)):
-        plt.title(f"Cluster {i}")
-        print(f"Cluster {i}: {len(cluster[i])} Spikes")
-        for x in cluster[i]:
-            plt.ylim(-60, 60)
-            plt.plot(x)
-        plt.show()
+    print(f"Number of cluster: {config.N_CLUSTER}")
 
 
 if __name__ == '__main__':
-    show_data(simulation_number=SIMULATION_NUMBER)
+    show_all_spikes()

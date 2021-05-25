@@ -1,15 +1,13 @@
-function ret = sendDataToPython(dataNo)
-
-    close all; clc;
+function ret = sendDataToPython(sim_type, dataNo)
 
     %% --- Variables
-    %Dateneingang --- 1 = MATLAB-Generator (eigen), 2,3 = MATLAB-Daten (Simulation), 4 = Messungen (Seidl), 5 = Messung (CRCNS, HC1)
-    Settings.loadDataType = 3;
+    %Dateneingang --- 1 = MATLAB-Generator (eigen), 2,3 = MATLAB-Daten
+    %(Simulation), 4 = Messungen (Seidl), 5 = Messung (CRCNS, HC1)
+    Settings.loadDataType = sim_type;
     %Modus des SpikeSortings --- 0 = offline, 1 = online
     Settings.mode = 0;
     %Verfahren --- 1 = PCA, 2 = Cross-Correlation, 3 = Template Matching, 4 = Ternäre-Gewichtung
     Settings.typeFE = 3;
-    Settings.noCluster = 4;
     %Störsignal mit lokalem Feldpotential --- 0 = aus, 1 = ein
     Settings.enLFP = 0;
     Settings.checkLabeling = 0;
@@ -30,16 +28,17 @@ function ret = sendDataToPython(dataNo)
 
     %% --- Interface zum Laden eines Datensatzen
     cd Funktionen;
+    pbar = ProgressBar(21, "Verarbeitung");
     switch(Settings.loadDataType)
         case 1
-            load('../../0_Rohdaten/20201130_RawData.mat');
+            load('../0_Rohdaten/20210524_RawData.mat');
             SampleRate = HW_Props.ADU_SampleRate;
             GaindB = HW_Props.PreAmp_GaindB;
             Labeling = GroundTruth;
             clear GroundTruth HW_Props;
         case 2 % dataNo <= 95
-            dataNo = 1;
-            load(['../1_SimDaten/simulation_', num2str(dataNo), '.mat']);
+            file = ['../1_SimDaten/simulation_', num2str(dataNo), '.mat'];
+            load(file);
             load('../1_SimDaten/ground_truth.mat');
             SampleRate = 24e3;
             GaindB = 0;
@@ -47,9 +46,8 @@ function ret = sendDataToPython(dataNo)
             Labeling = [spike_first_sample{dataNo}; spike_classes{dataNo}];
             RefSpikes = su_waveforms{dataNo};
             clear data spike_classes spike_first_sample su_waveforms;
-        case 3 % dataNo <= 5
-            file_name = ['../1_SimDaten_Neu/simulation_', num2str(dataNo), '.mat'];
-            load(file_name);
+        case 3 % dataNo <= 5 
+            load(['../1_SimDaten_Neu/simulation_', num2str(dataNo), '.mat']);
             U_EL = 0.5e-6*data;
             SampleRate = 1e3/samplingInterval;
             GaindB = 0;
@@ -70,6 +68,7 @@ function ret = sendDataToPython(dataNo)
             GaindB = 0;
             Labeling = [];
     end
+    pbar.update(1, "Daten eingelesen");
     clear dataNo;
 
     %% ---- Berechnung der lokalen Feldpotentiale (LFP)
@@ -92,26 +91,20 @@ function ret = sendDataToPython(dataNo)
     U_ThSDA = 0*Time + Settings.ThresholdSDA;
     Frame_SpikeIn = [];
     Frame_SpikeAlign = [];
-    Frame_SpikeCluster = {};
-    FeatureTable = [];
-    FeatureCluster = [];
-    Cluster_SpikeProp = {};
-    U_Spike = zeros(Settings.noCluster, length(Time));
-    FiringRate = [];
 
     % --- Filter-Koeffizienten bestimmen
     switch(Settings.selFILT)
         case 0 %keine Filterung
-            hFILT = 0;
         case 1 %FIR
             hFILT = fir1(nFIR-1, 2*Settings.fFIR/SampleRate, 'bandpass');
         case 2 %IIR (Butter)
-            [hFILT{2}, hFILT{1}] = butter(Settings.nIIR, 2*Settings.fFIR/SampleRate);
+            [hFILT1, hFILT0] = butter(Settings.nIIR, 2*Settings.fFIR/SampleRate);
         case 3 %IIR (Cheby Typ 2)
-            [hFILT{2}, hFILT{1}] = cheby2(Settings.nIIR, 80, 2*Settings.fFIR/SampleRate);
+            [hFILT1, hFILT0] = cheby2(Settings.nIIR, 80, 2*Settings.fFIR/SampleRate);
     end
 
     % --- Algorithmus zum Spike Sorting
+    pbar.update(2, "SpikeSorting (Vorbeitung done)");
     if(Settings.mode == 0)
         %% --- Offline-Ausführung des SpikeSortings
         % --- Datenfilterung (Wavelet Denoising + Filterung)
@@ -121,7 +114,7 @@ function ret = sendDataToPython(dataNo)
         elseif(Settings.selFILT == 1)
             U_FILT = filter(hFILT, U_denoise);
         else
-            U_FILT = filter(hFILT{2}, hFILT{1}, U_denoise);
+            U_FILT = filter(hFILT1, hFILT0, U_denoise);
         end
 
         % --- Spike Detection
@@ -159,7 +152,7 @@ function ret = sendDataToPython(dataNo)
             max_pos = 0;
             k = 1;
             % Positions-Erkennung (Betrags-Maximum)
-            while(k <= length(SpikeIn))
+            while(k < length(SpikeIn))
                 k = k +1;
                 if(SpikeIn(k) > max_val)
                     max_val = SpikeIn(k);
@@ -173,14 +166,16 @@ function ret = sendDataToPython(dataNo)
                 end
             end
             % Aligned-Frame Generator
-            if((max_pos - Settings.nStartAlign) <= 0)
+            if(max_pos - Settings.nStartAlign <= 0)
                 dX = abs(max_pos-Settings.nStartAlign);
                 PlaceHolder = zeros(1, dX);
-                Frame_SpikeAlign(i,:) = [PlaceHolder, Frame_SpikeIn(i,1:Settings.nFrameAlign-dX)];
-            elseif((max_pos+Settings.nFrameAlign-Settings.nStartAlign-1) > Settings.nFrameAlign)
-                Frame_SpikeAlign(i,:) = U_denoise(XPks(i)+max_pos-Settings.nStartAlign:XPks(i)+max_pos+Settings.nFrameAlign-Settings.nStartAlign-1);
+                Frame_SpikeAlign(i,:) = [PlaceHolder, Frame_SpikeIn(i,1:Settings.nFrameAlign-dX)];        
             else
-                Frame_SpikeAlign(i,:) = Frame_SpikeIn(i, max_pos-Settings.nStartAlign:max_pos+Settings.nFrameAlign-Settings.nStartAlign-1);
+                try               
+                  Frame_SpikeAlign(i,:) = Frame_SpikeIn(i, max_pos-Settings.nStartAlign:max_pos+Settings.nFrameAlign-Settings.nStartAlign-1);
+                catch
+                   display(i)
+                end
             end
         end
         clear SpikeIn max_val max_cnt max_pos k PlaceHolder dX;

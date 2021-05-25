@@ -12,7 +12,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def __train_model(model: Autoencoder, optimizer: torch.optim, criterion: nn, train_dataset: list,
-                  validation_dataset: list, update_percent: int, batch_size: int = 1,
+                  validation_dataset: list, update_percent: int, epoch: int, batch_size: int = 1,
                   train_with_clustering: bool = False, ):
     model = model.train()
     train_losses = []
@@ -25,7 +25,9 @@ def __train_model(model: Autoencoder, optimizer: torch.optim, criterion: nn, tra
         seq_pred = model(seq_true)
 
         if train_with_clustering:
-            loss = criterion.criterion(model, seq_pred, seq_true)
+            model.eval()
+            loss = criterion.criterion(model, seq_pred, seq_true, epoch=epoch)
+            model.train()
         else:
             loss = criterion(seq_pred, seq_true)
 
@@ -45,7 +47,7 @@ def __train_model(model: Autoencoder, optimizer: torch.optim, criterion: nn, tra
             seq_pred = model(seq_true)
 
             if train_with_clustering:
-                loss = criterion.criterion(model, seq_pred, seq_true)
+                loss = criterion.criterion(model, seq_pred, seq_true, epoch=epoch)
             else:
                 loss = criterion(seq_pred, seq_true)
 
@@ -60,12 +62,13 @@ def __train_model(model: Autoencoder, optimizer: torch.optim, criterion: nn, tra
 class __ClusteringLoss:
 
     def __init__(self, n_cluster):
+        self.n_cluster = n_cluster
         self.kmeans = KMeans(
             # init="random",
             n_clusters=n_cluster,
         )
 
-    def criterion(self, model, seq_pred, seq_true):
+    def criterion(self, model, seq_pred, seq_true, epoch: int):
         # Get reconstruction loss as mean squared error
         reconstruction_loss = nn.MSELoss().to(DEVICE)(seq_pred, seq_true)
 
@@ -87,9 +90,14 @@ class __ClusteringLoss:
                 distances_in_cluster.append(np.sqrt(np.abs(mean_cluster - spike)))
             all_cluster.append(np.mean(distances_in_cluster))
 
-        cluster_loss = np.mean(all_cluster)
+        cluster_loss = np.mean(all_cluster) * 48
 
-        loss = reconstruction_loss + cluster_loss * 25
+        # print(float(reconstruction_loss), cluster_loss)
+        # reconstruction_loss /= min(100, epoch * 4)
+        # cluster_loss *= min(100, epoch / 4)
+        loss = reconstruction_loss + cluster_loss
+
+        # print(float(reconstruction_loss), cluster_loss, float(loss))
 
         return loss
 
@@ -120,6 +128,7 @@ def train_model(model: Autoencoder, train_dataset: list, validation_dataset: lis
                                                     train_dataset=train_dataset,
                                                     validation_dataset=validation_dataset,
                                                     update_percent=update_percent,
+                                                    epoch=epoch,
                                                     batch_size=batch_size,
                                                     train_with_clustering=train_with_clustering)
 

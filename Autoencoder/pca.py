@@ -1,16 +1,12 @@
 import math
 
 import numpy as np
-from mat4py import loadmat
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
+import config
 import data_loader
-
-""""""""""""""""""""""""""""""""
-SIMULATION_NUMBER = 0
-""""""""""""""""""""""""""""""""
 
 
 def pca(n_components: int, train_data: list, test_data: list, n_cluster: int, plot: bool = False):
@@ -34,6 +30,7 @@ def pca(n_components: int, train_data: list, test_data: list, n_cluster: int, pl
     min_in_test_data = test_data.min()
     max_in_test_data = test_data.max()
     mse_per_cluster = []
+    all_mean_cluster = []
     for label in set(kmeans.labels_):
         cluster = []
         cluster_center = []
@@ -56,26 +53,35 @@ def pca(n_components: int, train_data: list, test_data: list, n_cluster: int, pl
             mse_per_cluster.append(0)
 
         if plot:
+            all_mean_cluster.append(mean_cluster)
             plt.title(f"All spikes clustered into {label} (center of the cluster decoded in black)")
-            plt.plot(mean_cluster, color="red", linewidth=2)
+            plt.plot(mean_cluster, color="yellow", linewidth=2)
             plt.ylim(min_in_test_data, max_in_test_data)
             plt.show()
+
+    if plot:
+        plt.title("All cluster means.")
+        for x in all_mean_cluster:
+            plt.plot(x)
+        plt.ylim(min_in_test_data, max_in_test_data)
+        plt.show()
 
     return kmeans, mse_per_cluster
 
 
-def main(simulation_number: int):
+def main():
     # Load train and test data
-    train_data, _, test_data = data_loader.load_train_val_test_data(
-        simulation_number=simulation_number)
+    train_data, _, test_data = data_loader.load_train_val_test_data()
 
-    data = loadmat('../Matlab/1_SimDaten/ground_truth.mat')
-    classes = np.array(data["spike_classes"][simulation_number])
-    n_cluster = len(set(classes))
-    print(f"Number of clusters: {n_cluster}")
+    # if n_cluster is None:
+    #     data = loadmat('../Matlab/1_SimDaten/ground_truth.mat')
+    #     classes = np.array(data["spike_classes"][simulation_number])
+    #     n_cluster = len(set(classes))
+    #     print(f"Number of clusters: {n_cluster}")
 
-    kmeans, mse_per_cluster = pca(train_data=train_data, test_data=test_data, n_cluster=n_cluster,
-                                  plot=True)
+    kmeans, mse_per_cluster = pca(train_data=train_data, test_data=test_data,
+                                  n_cluster=config.N_CLUSTER,
+                                  plot=True, n_components=config.EMBEDDED_DIMENSION)
 
     # print(kmeans.cluster_centers_)
     print(f"k-means inertia: {kmeans.inertia_}")
@@ -93,4 +99,4 @@ def main(simulation_number: int):
 
 
 if __name__ == '__main__':
-    main(simulation_number=SIMULATION_NUMBER)
+    main()
