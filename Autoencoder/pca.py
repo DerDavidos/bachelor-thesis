@@ -1,4 +1,5 @@
 import math
+from typing import Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -9,7 +10,21 @@ import config
 import data_loader
 
 
-def pca(n_components: int, train_data: list, test_data: list, n_cluster: int, plot: bool = False):
+def pca(n_components: int, train_data: np.ndarray, test_data: np.ndarray, n_cluster: int,
+        plot: bool = False) -> Tuple[KMeans, list]:
+    """ Fits PCA and k-means on train data and evaluate on test data
+
+    Parameters:
+        n_components (int): Number of PCA components
+        train_data (np.ndarray): The data to fit the PCA and k-means on
+        test_data (np.ndarray): The data the clustering is evaluated by
+        n_cluster (int): Number of cluster
+        plot (bool): Plot train data cluster and all mean cluster together
+    Returns:
+        tuple: - KMeans: K-means fitted on train data
+               - list: Mean squarred error per cluster
+    """
+
     # Init PCA and KMeans
     pca = PCA(n_components=n_components)
     kmeans = KMeans(
@@ -27,8 +42,8 @@ def pca(n_components: int, train_data: list, test_data: list, n_cluster: int, pl
     predictions = kmeans.predict(transformed_test_data)
 
     # Plot all spikes put in the same cluster
-    min_in_test_data = test_data.min()
-    max_in_test_data = test_data.max()
+    min_in_test_data = np.min(test_data)
+    max_in_test_data = np.max(test_data)
     mse_per_cluster = []
     all_mean_cluster = []
     for label in set(kmeans.labels_):
@@ -91,11 +106,6 @@ def main():
     for i, x in enumerate(mse_per_cluster):
         print(f"{i}: {x}")
     print(f"Cluster mean: \033[31m{np.mean(mse_per_cluster)}\033[0m")
-
-    # print("First 20 cluster labeled")
-    # print(kmeans.labels_[:20])
-    # print("Compared to real labels (numbers do not line up)")
-    # print(classes[:20])
 
 
 if __name__ == '__main__':

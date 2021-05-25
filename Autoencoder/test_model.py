@@ -4,20 +4,31 @@ import numpy as np
 import torch
 
 import autoencoder_functions
+import config
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 """"""""""""""""""""""""""""""""
-SIMULATION_NUMBER = 0
 TRAINED_WITH_CLUSTERING = True
 """"""""""""""""""""""""""""""""
 
 
-def plot_training(simulation_number: int, trained_with_clustering: bool = False):
+def plot_training(trained_with_clustering: bool = False) -> None:
+    """Plots the training and validation loss over the epochs and some spikes encoded and then
+    decoded
+
+    Parameters:
+        trained_with_clustering (int): If the training of the model to plot was perforemed with
+            clustering
+    """
     if trained_with_clustering:
-        directory = f"models/simulation_{simulation_number}_cluster_trained"
+        directory = f"models/{config.SIMULATION_TYPE}/" \
+                    f"simulation_{config.SIMULATION_NUMBER}_cluster_trained/" \
+                    f"sparse_{config.EMBEDDED_DIMENSION}"
     else:
-        directory = f"models/simulation_{simulation_number}"
+        directory = f"models/{config.SIMULATION_TYPE}/" \
+                    f"simulation_{config.SIMULATION_NUMBER}/" \
+                    f"sparse_{config.EMBEDDED_DIMENSION}"
 
     model = torch.load(f"{directory}/model.pth", map_location=torch.device(DEVICE))
     model = model.to(DEVICE)
@@ -25,7 +36,8 @@ def plot_training(simulation_number: int, trained_with_clustering: bool = False)
     with open(f"{directory}/train_history", 'rb') as his:
         history = pickle.load(his)
 
-    with open(f"data/simulation_{simulation_number}/test_data.npy", 'rb') as file:
+    with open(f"data/{config.SIMULATION_TYPE}/simulation_{config.SIMULATION_NUMBER}/test_data.npy",
+              'rb') as file:
         test_data = np.load(file)
     test_data, _, _ = autoencoder_functions.create_dataset(test_data)
 
@@ -43,5 +55,4 @@ def plot_training(simulation_number: int, trained_with_clustering: bool = False)
 
 
 if __name__ == '__main__':
-    plot_training(simulation_number=SIMULATION_NUMBER,
-                  trained_with_clustering=TRAINED_WITH_CLUSTERING)
+    plot_training(trained_with_clustering=TRAINED_WITH_CLUSTERING)

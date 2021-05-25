@@ -11,6 +11,58 @@ from autoencoder import Autoencoder
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+class __ClusteringLoss:
+    """ Custom PyTorch clustering loss """
+
+    def __init__(self, n_cluster):
+        self.n_cluster = n_cluster
+        self.kmeans = KMeans(
+            # init="random",
+            n_clusters=n_cluster,
+        )
+
+    def criterion(self, model: Autoencoder, seq_pred: list, seq_true: list, epoch: int):
+        """ Calculates reconstruction and clustering loss
+
+        Parameters:
+            model (Autoencoder): Number of samples to propagated thorugh the model at once
+            seq_pred (list): The reconstructed time series
+            seq_true (list): The original time series
+            epoch: The current epoch to eventually weight both losses accordingly
+        """
+        # Get reconstruction loss as mean squared error
+        reconstruction_loss = nn.MSELoss().to(DEVICE)(seq_pred, seq_true)
+
+        # Create spare representation and fit k-means on it
+        encode_seq_true = autoencoder_functions.encode_data(model, seq_true,
+                                                            batch_size=len(seq_true))
+
+        self.kmeans.fit(encode_seq_true)
+
+        all_cluster = []
+        for label in set(self.kmeans.labels_):
+            cluster = []
+            for i, spike in enumerate(seq_true):
+                if self.kmeans.labels_[i] == label:
+                    cluster.append(np.array(spike))
+            mean_cluster = np.mean(cluster, axis=0)
+            distances_in_cluster = []
+            for i, spike in enumerate(cluster):
+                distances_in_cluster.append(np.sqrt(np.abs(mean_cluster - spike)))
+            all_cluster.append(np.mean(distances_in_cluster))
+
+        cluster_loss = np.mean(all_cluster) * 48
+
+        # print(float(reconstruction_loss), cluster_loss)
+        # reconstruction_loss /= min(100, epoch * 4)
+        # cluster_loss *= min(100, epoch / 4)
+        loss = reconstruction_loss + cluster_loss
+
+        # print(float(reconstruction_loss), cluster_loss, float(loss))
+
+        return loss
+
+
 def __train_model(model: Autoencoder, optimizer: torch.optim, criterion: nn, train_dataset: list,
                   validation_dataset: list, update_percent: int, epoch: int, batch_size: int = 1,
                   train_with_clustering: bool = False, ):
@@ -57,49 +109,6 @@ def __train_model(model: Autoencoder, optimizer: torch.optim, criterion: nn, tra
     validation_loss = np.mean(validation_losses) / batch_size
 
     return train_loss, validation_loss
-
-
-class __ClusteringLoss:
-
-    def __init__(self, n_cluster):
-        self.n_cluster = n_cluster
-        self.kmeans = KMeans(
-            # init="random",
-            n_clusters=n_cluster,
-        )
-
-    def criterion(self, model, seq_pred, seq_true, epoch: int):
-        # Get reconstruction loss as mean squared error
-        reconstruction_loss = nn.MSELoss().to(DEVICE)(seq_pred, seq_true)
-
-        # Create spare representation and fit k-means on it
-        encode_seq_true = autoencoder_functions.encode_data(model, seq_true,
-                                                            batch_size=len(seq_true))
-
-        self.kmeans.fit(encode_seq_true)
-
-        all_cluster = []
-        for label in set(self.kmeans.labels_):
-            cluster = []
-            for i, spike in enumerate(seq_true):
-                if self.kmeans.labels_[i] == label:
-                    cluster.append(np.array(spike))
-            mean_cluster = np.mean(cluster, axis=0)
-            distances_in_cluster = []
-            for i, spike in enumerate(cluster):
-                distances_in_cluster.append(np.sqrt(np.abs(mean_cluster - spike)))
-            all_cluster.append(np.mean(distances_in_cluster))
-
-        cluster_loss = np.mean(all_cluster) * 48
-
-        # print(float(reconstruction_loss), cluster_loss)
-        # reconstruction_loss /= min(100, epoch * 4)
-        # cluster_loss *= min(100, epoch / 4)
-        loss = reconstruction_loss + cluster_loss
-
-        # print(float(reconstruction_loss), cluster_loss, float(loss))
-
-        return loss
 
 
 def train_model(model: Autoencoder, train_dataset: list, validation_dataset: list, n_epochs: int,

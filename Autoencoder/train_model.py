@@ -18,15 +18,19 @@ EARLY_STOPPING = 15
 """"""""""""""""""""""""""""""""
 
 
-def main(batch_size: int = 32, epochs: int = 1,
-         train_with_clustering: bool = False,
-         early_stopping: int = None):
-    # if n_cluster is None and train_with_clustering:
-    #     ground_truth = loadmat('../Matlab/1_SimDaten/ground_truth.mat')
-    #     classes = np.array(ground_truth["spike_classes"][simulation_number])
-    #     n_cluster = len(set(classes)) - 1
-    #     print(f"Number of clusters: {n_cluster}")
+def train_model(batch_size: int, epochs: int = 1,
+                train_with_clustering: bool = False,
+                early_stopping: int = None) -> None:
+    """ Trains the Autoencoder PyTorch model from autoencoder.py with the setting in config.py
 
+    Parameters:
+        batch_size (int): Number of samples to propagated thorugh the model at once
+        epochs (int): How many iterations the dataset is passed throug the model
+        train_with_clustering: If the training should be performed with loss containing k-means
+            clustering loss
+        early_stopping: After how many epochs to stop if the validation accuracy does not
+            improve (none for no early stopping)
+    """
     # Get train and validation data
     if train_with_clustering:
         directory = f"models/{config.SIMULATION_TYPE}/" \
@@ -83,6 +87,7 @@ def main(batch_size: int = 32, epochs: int = 1,
 
 
 if __name__ == '__main__':
+    # Train model with and without combinded clustering loss
     for clustering in TRAIN_WITH_CLUSTERING:
-        main(batch_size=BATCH_SIZE, epochs=EPOCHS,
-             train_with_clustering=clustering, early_stopping=EARLY_STOPPING)
+        train_model(batch_size=BATCH_SIZE, epochs=EPOCHS,
+                    train_with_clustering=clustering, early_stopping=EARLY_STOPPING)

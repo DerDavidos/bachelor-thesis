@@ -1,13 +1,26 @@
 import os
 from pathlib import Path
+from typing import Tuple
 
 import numpy as np
 from sklearn.model_selection import train_test_split
 
 import config
 
+""""""""""""""""""""""""""""""""
+VALIDATION_PERCENTAGE = 0.15
+TEST_PERCENTAGE = 0.15
+""""""""""""""""""""""""""""""""
 
-def load_train_val_test_data():
+
+def load_train_val_test_data() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """ Loads and returs the train, validation and test data from the simulation specified in
+    config.py
+
+    Returns
+        tuple: train, validation and test data as numpy arrays
+    """
+
     simulation_type = config.SIMULATION_TYPE
     simulation_number = config.SIMULATION_NUMBER
 
@@ -27,8 +40,17 @@ def load_train_val_test_data():
     return train_data, validation_data, test_data
 
 
-def save_train_val_test_data(simulation_type: str, simulation_number, test_data, train_data,
-                             validation_data):
+def save_train_val_test_data(simulation_type: str, simulation_number, train_data: list,
+                             test_data: list, validation_data: list) -> None:
+    """ Saves train, validation and test data into data folder
+
+    Parameters
+        simulation_type: Type of simulation
+        simulation_number: Number of simulation
+        train_data: Train data set
+        validation_data: Validation data set
+        test_data: Test data set
+    """
     path = f"data/{simulation_type}/simulation_{simulation_number}"
 
     Path(path).mkdir(parents=True, exist_ok=True)
@@ -40,7 +62,15 @@ def save_train_val_test_data(simulation_type: str, simulation_number, test_data,
         np.save(file, test_data)
 
 
-def generate_all_train_val_test_data_sets():
+def generate_all_train_val_test_data_sets(validation_percentage: float,
+                                          test_percentage: float) -> None:
+    """ Generates train, validation and test data from files in spike folder
+
+    Parameters:
+        validation_percentage (float): Percentage of data set to be validation data
+        test_percentage (float): Percentage of data set to be test data
+    """
+
     for directory in os.listdir("spikes"):
         print(directory)
         Path(directory).mkdir(parents=True, exist_ok=True)
@@ -61,11 +91,11 @@ def generate_all_train_val_test_data_sets():
             # Split data into train, validation
             train_data, validation_data = train_test_split(
                 aligned_spikes,
-                test_size=0.3,
+                test_size=(validation_percentage + test_percentage),
             )
             validation_data, test_data = train_test_split(
                 validation_data,
-                test_size=0.5,
+                test_size=(test_percentage / (validation_percentage + test_percentage)),
             )
 
             save_train_val_test_data(
@@ -76,4 +106,5 @@ def generate_all_train_val_test_data_sets():
 
 
 if __name__ == '__main__':
-    generate_all_train_val_test_data_sets()
+    generate_all_train_val_test_data_sets(validation_percentage=VALIDATION_PERCENTAGE,
+                                          test_percentage=TEST_PERCENTAGE)

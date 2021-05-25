@@ -1,4 +1,5 @@
 import math
+from typing import Tuple
 
 import numpy as np
 import torch
@@ -8,6 +9,7 @@ from sklearn.cluster import KMeans
 import autoencoder_functions
 import config
 import data_loader
+from autoencoder import Autoencoder
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -16,9 +18,23 @@ TRAINED_WITH_CLUSTERING = True
 """"""""""""""""""""""""""""""""
 
 
-def clustering(model, train_data: list, test_data: list, n_cluster: int, plot: bool = False):
-    min_in_test_data = test_data.min()
-    max_in_test_data = test_data.max()
+def clustering(model: Autoencoder, train_data: np.ndarray, test_data: np.ndarray, n_cluster: int,
+               plot: bool = False) -> Tuple[KMeans, list]:
+    """ Fits k-means on train data and evaluate on test data
+
+    Parameters:
+        model (Autoencoder): The model with to reduce the dimensions
+        train_data (np.ndarray): The data to fit the k-means on
+        test_data (np.ndarray): The data the clustering is evaluated by
+        n_cluster (int): Number of cluster
+        plot (bool): Plot train data cluster and all mean cluster together
+    Returns:
+        tuple: - KMeans: K-Means fitted on train data
+               - list: Mean squarred error per cluster
+    """
+
+    min_in_test_data = np.min(test_data)
+    max_in_test_data = np.max(test_data)
 
     # Init KMeans and fit it to the sparse representation of the training data
     kmeans = KMeans(
@@ -49,10 +65,10 @@ def clustering(model, train_data: list, test_data: list, n_cluster: int, plot: b
     # Plot all spikes put in the same cluster
     all_mean = []
     mse_per_cluster = []
-    mse_per_cluster_center = []
     for label in set(kmeans.labels_):
         cluster = []
         cluster_center = []
+        # TODO: What is calculated and what should be
         for i, spike in enumerate(test_data):
             if predictions[i] == label:
                 cluster.append(spike)
@@ -61,7 +77,6 @@ def clustering(model, train_data: list, test_data: list, n_cluster: int, plot: b
                 plt.plot(spike)
 
         if len(cluster) != 0:
-            mse_per_cluster_center.append(np.mean(cluster_center))
             mean_cluster = np.mean(cluster, axis=0)
             distances_in_cluster = []
             for i, spike in enumerate(cluster):
@@ -71,7 +86,6 @@ def clustering(model, train_data: list, test_data: list, n_cluster: int, plot: b
                 all_mean.append(mean_cluster)
                 plt.plot(mean_cluster, color="red", linewidth=2)
         else:
-            mse_per_cluster_center.append(0)
             mse_per_cluster.append(0)
 
         if plot:
@@ -87,16 +101,22 @@ def clustering(model, train_data: list, test_data: list, n_cluster: int, plot: b
             plt.plot(x)
         plt.show()
 
-    return kmeans, mse_per_cluster, mse_per_cluster_center
+    return kmeans, mse_per_cluster
 
 
-def main(trained_with_clustering: bool):
+def main(trained_with_clustering: bool) -> None:
+    """ Performs clustering on the test data set for the simulation defined in config.py
+
+    Parameters:
+        trained_with_clustering:
+    """
     if trained_with_clustering:
         directory = f"models/{config.SIMULATION_TYPE}/" \
                     f"simulation_{config.SIMULATION_NUMBER}_cluster_trained/" \
                     f"sparse_{config.EMBEDDED_DIMENSION}"
     else:
-        directory = f"models/{config.SIMULATION_TYPE}/simulation_{config.SIMULATION_NUMBER}/" \
+        directory = f"models/{config.SIMULATION_TYPE}/" \
+                    f"simulation_{config.SIMULATION_NUMBER}/" \
                     f"sparse_{config.EMBEDDED_DIMENSION}"
 
     # Load train and test data
@@ -109,24 +129,19 @@ def main(trained_with_clustering: bool):
 
     print(f"Number of clusters: {config.N_CLUSTER}")
 
-    kmeans, mse_per_cluster, mse_per_cluster_center = clustering(model=model,
-                                                                 train_data=train_data,
-                                                                 test_data=test_data,
-                                                                 n_cluster=config.N_CLUSTER,
-                                                                 plot=True)
+    kmeans, mse_per_cluster = clustering(model=model,
+                                         train_data=train_data,
+                                         test_data=test_data,
+                                         n_cluster=config.N_CLUSTER,
+                                         plot=True)
 
     # Evaluate
     print(f"k-means inertia: {kmeans.inertia_}")
 
-    print("\nSquared mean distance from spikes to cluster center")
-    for i, x in enumerate(mse_per_cluster_center):
-        print(f"{i}: {x or 'Nan'}")
-    print(f"Cluster mean: {np.mean(mse_per_cluster_center)}")
-
-    print("\nSquared mean distance from spikes to each other in each cluster")
+    print("\nSquared mean distance from spikes in each cluster to cluster mean")
     for i, x in enumerate(mse_per_cluster):
         print(f"{i}: {x or 'Nan'}")
-    print(f"Cluster mean: \033[31m{np.mean(mse_per_cluster)}\033[0m")
+    print(f"Mean of clusters: \033[31m{np.mean(mse_per_cluster)}\033[0m")
 
 
 if __name__ == '__main__':

@@ -8,12 +8,6 @@ from autoencoder import Autoencoder
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def create_dataset(sequences: list):
-    dataset = [torch.tensor(s).unsqueeze(1).float() for s in sequences]
-    _, seq_len, n_features = torch.stack(dataset).shape
-    return dataset, seq_len, n_features
-
-
 def predict(model: Autoencoder, dataset: list):
     predictions, losses = [], []
     criterion = nn.L1Loss(reduction='sum').to(DEVICE)
@@ -45,7 +39,17 @@ def test_reconstructions(model: Autoencoder, test_dataset: list, max_graphs: int
         plt.show()
 
 
-def encode_data(model: Autoencoder, data: list, batch_size: int = 1):
+def encode_data(model: Autoencoder, data: list, batch_size: int):
+    """ Uses the Encoder component of the Autoencoder to encode the data
+
+    Parameters:
+        model: The Autoencoder model to encode the data with
+        data: The data to encode
+        batch_size: Batch size of the given data
+    Returns:
+         np.narray: The encoded data
+    """
+
     if isinstance(data, torch.Tensor):
         data = data.detach().numpy()
     data = np.array(data)
@@ -61,7 +65,17 @@ def encode_data(model: Autoencoder, data: list, batch_size: int = 1):
     return data
 
 
-def decode_data(model: Autoencoder, data: list, batch_size: int = 1):
+def decode_data(model: Autoencoder, data: list, batch_size: int) -> np.narray:
+    """ Uses the Decoder component of the Autoencoder to decode the data
+
+    Parameters:
+        model: The Autoencoder model to decode the data with
+        data: The data to decode
+        batch_size: Batch size of the given data
+    Returns:
+         np.narray: The decoded data
+    """
+
     data = np.array(data)
     data = torch.tensor(data).float()
     if len(data.shape) == 1:
@@ -75,7 +89,13 @@ def decode_data(model: Autoencoder, data: list, batch_size: int = 1):
     return data
 
 
-def plot_history(history: dict):
+def plot_history(history: dict) -> None:
+    """ Plots the train and validation accuracy over the training epochs of a model
+
+    Parameters:
+        history (dict): The trainings history
+    """
+
     ax = plt.figure().gca()
     ax.plot(history['train'])
     ax.plot(history['val'])
