@@ -9,7 +9,10 @@ import pca
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def main():
+def compare() -> None:
+    """ Compares the clustering of spikes using the autoenocder, the autoenocder trained with
+    clustering and pca to reduce the data dimension beforehand """
+    
     # Load train and test data
     train_data, _, test_data = data_loader.load_train_val_test_data()
 
@@ -23,8 +26,9 @@ def main():
                        f"sparse_{config.EMBEDDED_DIMENSION}/model.pth",
                        map_location=torch.device(DEVICE))
     model = model.to(DEVICE)
-    _, mse_per_cluster, _ = clustering.clustering(model=model, train_data=train_data,
-                                                  test_data=test_data, n_cluster=config.N_CLUSTER)
+    _, mse_per_cluster = clustering.autoencoder_clustering(model=model, train_data=train_data,
+                                                           test_data=test_data,
+                                                           n_cluster=config.N_CLUSTER)
     print(f"Cluster mean squarred: \033[31m{np.mean(mse_per_cluster)}\033[0m")
 
     print("\nAutoencoder trained with clustering.")
@@ -33,15 +37,17 @@ def main():
                        f"sparse_{config.EMBEDDED_DIMENSION}/model.pth",
                        map_location=torch.device(DEVICE))
     model = model.to(DEVICE)
-    _, mse_per_cluster, _ = clustering.clustering(model=model, train_data=train_data,
-                                                  test_data=test_data, n_cluster=config.N_CLUSTER)
+    _, mse_per_cluster = clustering.autoencoder_clustering(model=model, train_data=train_data,
+                                                           test_data=test_data,
+                                                           n_cluster=config.N_CLUSTER)
     print(f"Cluster mean squarred: \033[31m{np.mean(mse_per_cluster)}\033[0m")
 
     print("\nPCA.")
-    _, mse_per_cluster = pca.pca(n_components=config.EMBEDDED_DIMENSION, train_data=train_data,
-                                 test_data=test_data, n_cluster=config.N_CLUSTER)
+    _, mse_per_cluster = pca.pca_clustering(n_components=config.EMBEDDED_DIMENSION,
+                                            train_data=train_data,
+                                            test_data=test_data, n_cluster=config.N_CLUSTER)
     print(f"Cluster mean squarred: \033[31m{np.mean(mse_per_cluster)}\033[0m")
 
 
 if __name__ == '__main__':
-    main()
+    compare()

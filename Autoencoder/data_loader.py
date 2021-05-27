@@ -10,6 +10,7 @@ import config
 """"""""""""""""""""""""""""""""
 VALIDATION_PERCENTAGE = 0.15
 TEST_PERCENTAGE = 0.15
+OVERRIDE = False
 """"""""""""""""""""""""""""""""
 
 
@@ -63,48 +64,61 @@ def save_train_val_test_data(simulation_type: str, simulation_number, train_data
 
 
 def generate_all_train_val_test_data_sets(validation_percentage: float,
-                                          test_percentage: float) -> None:
+                                          test_percentage: float, override: bool = False) -> None:
     """ Generates train, validation and test data from files in spike folder
 
     Parameters:
         validation_percentage (float): Percentage of data set to be validation data
         test_percentage (float): Percentage of data set to be test data
+        override (bool): Override the data for already created simulation
     """
 
     for directory in os.listdir("spikes"):
-        print(directory)
-        Path(directory).mkdir(parents=True, exist_ok=True)
+        if directory == "README.md":
+            break
+
         for simulation_file in os.listdir(f"spikes/{directory}"):
-            # Load aligned spikes
-            with open(f"spikes/{directory}/{simulation_file}", 'rb') as f:
-                aligned_spikes = np.load(f)
 
-            i = 0
-            while i < len(aligned_spikes):
-                if len(set(aligned_spikes[i])) == 1:
-                    aligned_spikes = np.delete(aligned_spikes, i, 0)
-                else:
-                    i += 1
+            simulation_number = str(simulation_file).split("_")[1].split(".")[0]
+            Path(f"data/{directory}/simulation_{simulation_number}").mkdir(parents=True,
+                                                                           exist_ok=True)
+            if override or len(
+                    os.listdir(f"data/{directory}/simulation_{simulation_number}")) == 0:
 
-            print(f"Data size: {len(aligned_spikes)}, Sequence length: {len(aligned_spikes[0])}")
+                # Load aligned spikes
+                with open(f"spikes/{directory}/{simulation_file}", 'rb') as f:
+                    aligned_spikes = np.load(f)
 
-            # Split data into train, validation
-            train_data, validation_data = train_test_split(
-                aligned_spikes,
-                test_size=(validation_percentage + test_percentage),
-            )
-            validation_data, test_data = train_test_split(
-                validation_data,
-                test_size=(test_percentage / (validation_percentage + test_percentage)),
-            )
+                i = 0
+                while i < len(aligned_spikes):
+                    if len(set(aligned_spikes[i])) == 1:
+                        aligned_spikes = np.delete(aligned_spikes, i, 0)
+                    else:
+                        i += 1
 
-            save_train_val_test_data(
-                simulation_type=directory,
-                simulation_number=str(simulation_file).split("_")[1].split(".")[0],
-                train_data=train_data, validation_data=validation_data,
-                test_data=test_data)
+                print(f"{directory}/{simulation_file}")
+                print(
+                    f"Data size: {len(aligned_spikes)}, Sequence length: {len(aligned_spikes[0])}")
+
+                # Split data into train, validation
+                train_data, validation_data = train_test_split(
+                    aligned_spikes,
+                    test_size=(validation_percentage + test_percentage),
+                )
+                validation_data, test_data = train_test_split(
+                    validation_data,
+                    test_size=(test_percentage / (validation_percentage + test_percentage)),
+                )
+
+                save_train_val_test_data(
+                    simulation_type=directory,
+                    simulation_number=simulation_number,
+                    train_data=train_data, validation_data=validation_data,
+                    test_data=test_data)
+
+                print()
 
 
 if __name__ == '__main__':
     generate_all_train_val_test_data_sets(validation_percentage=VALIDATION_PERCENTAGE,
-                                          test_percentage=TEST_PERCENTAGE)
+                                          test_percentage=TEST_PERCENTAGE, override=OVERRIDE)

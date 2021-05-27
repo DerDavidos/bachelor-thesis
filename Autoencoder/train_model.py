@@ -18,8 +18,7 @@ EARLY_STOPPING = 15
 """"""""""""""""""""""""""""""""
 
 
-def train_model(batch_size: int, epochs: int = 1,
-                train_with_clustering: bool = False,
+def train_model(batch_size: int, epochs: int = 1, train_with_clustering: bool = False,
                 early_stopping: int = None) -> None:
     """ Trains the Autoencoder PyTorch model from autoencoder.py with the setting in config.py
 

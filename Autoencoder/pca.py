@@ -1,4 +1,3 @@
-import math
 from typing import Tuple
 
 import numpy as np
@@ -10,8 +9,8 @@ import config
 import data_loader
 
 
-def pca(n_components: int, train_data: np.ndarray, test_data: np.ndarray, n_cluster: int,
-        plot: bool = False) -> Tuple[KMeans, list]:
+def pca_clustering(n_components: int, train_data: np.ndarray, test_data: np.ndarray, n_cluster: int,
+                   plot: bool = False) -> Tuple[KMeans, list]:
     """ Fits PCA and k-means on train data and evaluate on test data
 
     Parameters:
@@ -44,59 +43,57 @@ def pca(n_components: int, train_data: np.ndarray, test_data: np.ndarray, n_clus
     # Plot all spikes put in the same cluster
     min_in_test_data = np.min(test_data)
     max_in_test_data = np.max(test_data)
+
+    all_mean = []
     mse_per_cluster = []
-    all_mean_cluster = []
+
     for label in set(kmeans.labels_):
         cluster = []
-        cluster_center = []
+
         for i, spike in enumerate(test_data):
             if predictions[i] == label:
                 cluster.append(spike)
-                cluster_center.append(math.sqrt(np.mean(
-                    abs([label] - np.array(spike).reshape(-1)))))
                 plt.plot(spike)
 
         if len(cluster) != 0:
             mean_cluster = np.mean(cluster, axis=0)
             distances_in_cluster = []
             for i, spike in enumerate(cluster):
-                distances_in_cluster.append(np.sqrt(np.abs(mean_cluster - spike)))
+                distances_in_cluster.append(np.mean(np.sqrt(np.abs(mean_cluster - spike))))
             mse_per_cluster.append(np.mean(distances_in_cluster))
+
             if plot:
+                all_mean.append(mean_cluster)
                 plt.plot(mean_cluster, color="red", linewidth=2)
         else:
             mse_per_cluster.append(0)
 
         if plot:
-            all_mean_cluster.append(mean_cluster)
             plt.title(f"All spikes clustered into {label} (center of the cluster decoded in black)")
             plt.plot(mean_cluster, color="yellow", linewidth=2)
             plt.ylim(min_in_test_data, max_in_test_data)
             plt.show()
 
     if plot:
-        plt.title("All cluster means.")
-        for x in all_mean_cluster:
-            plt.plot(x)
+        plt.title(f"All cluster means")
         plt.ylim(min_in_test_data, max_in_test_data)
+        for x in all_mean:
+            plt.plot(x)
         plt.show()
 
     return kmeans, mse_per_cluster
 
 
 def main():
+    """ Performs clustering using pca to reduce dimension on the test data set for the simulation
+    defined in config.py """
+
     # Load train and test data
     train_data, _, test_data = data_loader.load_train_val_test_data()
 
-    # if n_cluster is None:
-    #     data = loadmat('../Matlab/1_SimDaten/ground_truth.mat')
-    #     classes = np.array(data["spike_classes"][simulation_number])
-    #     n_cluster = len(set(classes))
-    #     print(f"Number of clusters: {n_cluster}")
-
-    kmeans, mse_per_cluster = pca(train_data=train_data, test_data=test_data,
-                                  n_cluster=config.N_CLUSTER,
-                                  plot=True, n_components=config.EMBEDDED_DIMENSION)
+    kmeans, mse_per_cluster = pca_clustering(train_data=train_data, test_data=test_data,
+                                             n_cluster=config.N_CLUSTER,
+                                             plot=True, n_components=config.EMBEDDED_DIMENSION)
 
     # print(kmeans.cluster_centers_)
     print(f"k-means inertia: {kmeans.inertia_}")

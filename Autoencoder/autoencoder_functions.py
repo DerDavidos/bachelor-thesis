@@ -39,7 +39,7 @@ def test_reconstructions(model: Autoencoder, test_dataset: list, max_graphs: int
         plt.show()
 
 
-def encode_data(model: Autoencoder, data: list, batch_size: int):
+def encode_data(model: Autoencoder, data: np.ndarray, batch_size: int):
     """ Uses the Encoder component of the Autoencoder to encode the data
 
     Parameters:
@@ -65,7 +65,7 @@ def encode_data(model: Autoencoder, data: list, batch_size: int):
     return data
 
 
-def decode_data(model: Autoencoder, data: list, batch_size: int) -> np.narray:
+def decode_data(model: Autoencoder, data: list, batch_size: int) -> np.ndarray:
     """ Uses the Decoder component of the Autoencoder to decode the data
 
     Parameters:
