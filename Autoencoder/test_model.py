@@ -6,8 +6,6 @@ import torch
 import autoencoder_functions
 import config
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 """"""""""""""""""""""""""""""""
 TRAINED_WITH_CLUSTERING = True
 """"""""""""""""""""""""""""""""
@@ -20,7 +18,9 @@ def plot_training(trained_with_clustering: bool = False) -> None:
     Parameters:
         trained_with_clustering (int): If the training of the model to plot was perforemed with
             clustering
+
     """
+
     if trained_with_clustering:
         directory = f"models/{config.SIMULATION_TYPE}/" \
                     f"simulation_{config.SIMULATION_NUMBER}_cluster_trained/" \
@@ -30,8 +30,8 @@ def plot_training(trained_with_clustering: bool = False) -> None:
                     f"simulation_{config.SIMULATION_NUMBER}/" \
                     f"sparse_{config.EMBEDDED_DIMENSION}"
 
-    model = torch.load(f"{directory}/model.pth", map_location=torch.device(DEVICE))
-    model = model.to(DEVICE)
+    model = torch.load(f"{directory}/model.pth")
+    model = model
 
     with open(f"{directory}/train_history", 'rb') as his:
         history = pickle.load(his)

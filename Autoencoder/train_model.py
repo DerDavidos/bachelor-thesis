@@ -8,8 +8,6 @@ import autoencoder_training
 import config
 import data_loader
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 """"""""""""""""""""""""""""""""
 TRAIN_WITH_CLUSTERING = [True, False]
 BATCH_SIZE = 64
@@ -30,6 +28,7 @@ def train_model(batch_size: int, epochs: int = 1, train_with_clustering: bool = 
         early_stopping: After how many epochs to stop if the validation accuracy does not
             improve (none for no early stopping)
     """
+
     # Get train and validation data
     if train_with_clustering:
         directory = f"models/{config.SIMULATION_TYPE}/" \
@@ -59,7 +58,7 @@ def train_model(batch_size: int, epochs: int = 1, train_with_clustering: bool = 
 
     # Create Autoencoder model and print it's architecture
     model = autoencoder.Autoencoder(input_dim=input_dim, embedded_dim=config.EMBEDDED_DIMENSION)
-    model = model.to(DEVICE)
+    model = model
     print("\nModel architecture")
     print(model)
 

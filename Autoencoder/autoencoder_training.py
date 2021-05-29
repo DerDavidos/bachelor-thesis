@@ -8,8 +8,6 @@ from sklearn.cluster import KMeans
 import autoencoder_functions
 from autoencoder import Autoencoder
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 class __ClusteringLoss:
     """ Custom PyTorch clustering loss """
@@ -31,7 +29,7 @@ class __ClusteringLoss:
             epoch: The current epoch to eventually weight both losses accordingly
         """
         # Get reconstruction loss as mean squared error
-        reconstruction_loss = nn.MSELoss().to(DEVICE)(seq_pred, seq_true)
+        reconstruction_loss = nn.MSELoss()(seq_pred, seq_true)
 
         # Create spare representation and fit k-means on it
         encode_seq_true = autoencoder_functions.encode_data(model, seq_true,
@@ -56,7 +54,7 @@ class __ClusteringLoss:
         # print(float(reconstruction_loss), cluster_loss)
         # reconstruction_loss /= min(100, epoch * 4)
         # cluster_loss *= min(100, epoch / 4)
-        loss = reconstruction_loss + cluster_loss
+        loss = reconstruction_loss + cluster_loss / 4
 
         # print(float(reconstruction_loss), cluster_loss, float(loss))
 
@@ -73,7 +71,7 @@ def __train_model(model: Autoencoder, optimizer: torch.optim, criterion: nn, tra
             print("\r", int(i / len(train_dataset) * 100), "%", sep="", end="")
         optimizer.zero_grad()
 
-        seq_true = seq_true.to(DEVICE)
+        seq_true = seq_true
         seq_pred = model(seq_true)
 
         if train_with_clustering:
@@ -95,7 +93,7 @@ def __train_model(model: Autoencoder, optimizer: torch.optim, criterion: nn, tra
     model = model.eval()
     with torch.no_grad():
         for seq_true in validation_dataset:
-            seq_true = seq_true.to(DEVICE)
+            seq_true = seq_true
             seq_pred = model(seq_true)
 
             if train_with_clustering:
@@ -117,7 +115,7 @@ def train_model(model: Autoencoder, train_dataset: list, validation_dataset: lis
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
 
     if not train_with_clustering:
-        criterion = nn.MSELoss().to(DEVICE)
+        criterion = nn.MSELoss()
     else:
         criterion = __ClusteringLoss(n_cluster)
 

@@ -5,18 +5,16 @@ from matplotlib import pyplot as plt
 
 from autoencoder import Autoencoder
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 def predict(model: Autoencoder, dataset: list):
     predictions, losses = [], []
-    criterion = nn.L1Loss(reduction='sum').to(DEVICE)
+    criterion = nn.L1Loss(reduction='sum')
     with torch.no_grad():
         model = model.eval()
         for seq_true in dataset:
             if len(seq_true.shape) == 2:
                 seq_true = seq_true.reshape(1, -1, 1)
-            seq_true = seq_true.to(DEVICE)
+            seq_true = seq_true
             seq_pred = model(seq_true)
 
             loss = criterion(seq_pred, seq_true)

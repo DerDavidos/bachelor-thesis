@@ -1,7 +1,4 @@
-import torch
 import torch.nn as nn
-
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class Encoder(nn.Module):
@@ -89,8 +86,8 @@ class Autoencoder(nn.Module):
 
         self.embedded_dim = embedded_dim
 
-        self.__encoder = Encoder(input_dim=input_dim, embedded_dim=self.embedded_dim).to(DEVICE)
-        self.__decoder = Decoder(output_dim=input_dim).to(DEVICE)
+        self.__encoder = Encoder(input_dim=input_dim, embedded_dim=self.embedded_dim)
+        self.__decoder = Decoder(output_dim=input_dim)
 
     def forward(self, x):
         if len(x.shape) != 3:
