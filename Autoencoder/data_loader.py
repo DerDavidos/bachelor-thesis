@@ -18,7 +18,7 @@ def load_train_val_test_data() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """ Loads and returs the train, validation and test data from the simulation specified in
     config.py
 
-    Returns
+    Returns:
         tuple: train, validation and test data as numpy arrays
     """
 
@@ -45,7 +45,7 @@ def save_train_val_test_data(simulation_type: str, simulation_number, train_data
                              test_data: list, validation_data: list) -> None:
     """ Saves train, validation and test data into data folder
 
-    Parameters
+    Parameters:
         simulation_type: Type of simulation
         simulation_number: Number of simulation
         train_data: Train data set
@@ -86,7 +86,7 @@ def generate_all_train_val_test_data_sets(validation_percentage: float,
                     os.listdir(f"data/{directory}/simulation_{simulation_number}")) == 0:
 
                 # Load aligned spikes
-                with open(f"spikes/{directory}/{simulation_file}", 'rb') as f:
+                with open(f"spikes/{directory}/{simulation_file}/spikes.npy", 'rb') as f:
                     aligned_spikes = np.load(f)
 
                 i = 0
