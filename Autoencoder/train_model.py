@@ -10,9 +10,9 @@ import data_loader
 
 """"""""""""""""""""""""""""""""
 TRAIN_WITH_CLUSTERING = [True, False]
-BATCH_SIZE = 64
+BATCH_SIZE = 256
 EPOCHS = 500
-EARLY_STOPPING = 15
+EARLY_STOPPING = 10
 """"""""""""""""""""""""""""""""
 
 

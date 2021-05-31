@@ -8,12 +8,15 @@ class Encoder(nn.Module):
 
         hidden_dim = int(input_dim / 2)
 
-        self.convolution_1d = nn.Conv1d(1, 5, kernel_size=11, padding=5, padding_mode="replicate")
+        self.convolution_1d_1 = nn.Conv1d(1, 5, kernel_size=11, padding=5, padding_mode="replicate")
+
+        self.convolution_1d_2 = nn.Conv1d(5, 5, kernel_size=7, padding=3, padding_mode="replicate")
+
         self.leaky_re_lu = nn.LeakyReLU()
         self.max_pooling = nn.MaxPool1d(2)
 
-        a = int(hidden_dim / 2)
-        print(a)
+        self.dropout_1 = nn.Dropout(0.2)
+
         # First LSTM
         self.lstm_1 = nn.LSTM(
             input_size=hidden_dim,
@@ -22,6 +25,8 @@ class Encoder(nn.Module):
             batch_first=True,
             bidirectional=True,
         )
+
+        self.dropout_2 = nn.Dropout(0.2)
 
         # Second LSTM
         self.lstm_2 = nn.LSTM(
@@ -36,17 +41,21 @@ class Encoder(nn.Module):
         x = x.reshape((batch_size, 1, -1))
 
         # Convolution + ReLu
-        x = self.convolution_1d(x)
+        x = self.convolution_1d_1(x)
+        x = self.convolution_1d_2(x)
+
         x = self.leaky_re_lu(x)
 
         # Max Pooling
         x = self.max_pooling(x)
 
+        x = self.dropout_1(x)
         # Fist LSTM
         _, (x, _) = self.lstm_1(x)
         x = x.swapaxes(0, 1)
         x = x.reshape((batch_size, 1, -1))
 
+        x = self.dropout_2(x)
         # Second LSTM
         _, (x, _) = self.lstm_2(x)
         x = x.swapaxes(0, 1)
@@ -62,8 +71,11 @@ class Decoder(nn.Module):
 
         self.up_sample = nn.Upsample(output_dim)
 
-        self.transpose_convolution_1d = nn.ConvTranspose1d(1, 5, kernel_size=11, padding=5)
-        self.transpose_convolution_1d_2 = nn.ConvTranspose1d(5, 1, kernel_size=1)
+        self.transpose_convolution_1d_2 = nn.ConvTranspose1d(1, 5, kernel_size=7, padding=3)
+
+        self.transpose_convolution_1d_1 = nn.ConvTranspose1d(5, 5, kernel_size=11, padding=5)
+
+        self.transpose_convolution_1d_resize = nn.ConvTranspose1d(5, 1, kernel_size=1)
 
     def forward(self, x, batch_size):
         x = x.reshape(batch_size, 1, -1)
@@ -71,9 +83,12 @@ class Decoder(nn.Module):
         # Up sampling
         x = self.up_sample(x)
 
-        # De-Convolution
-        x = self.transpose_convolution_1d(x)
+        # De-Convolution\
         x = self.transpose_convolution_1d_2(x)
+
+        x = self.transpose_convolution_1d_1(x)
+
+        x = self.transpose_convolution_1d_resize(x)
         x = x.reshape((batch_size, -1, 1))
 
         return x

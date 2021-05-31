@@ -33,15 +33,15 @@ def show_all_spikes() -> None:
     min_in_test_data = np.min(aligned_spikes)
     max_in_test_data = np.max(aligned_spikes)
 
-    for x in set(label):
-        for i in range(len(label)):
-            if label[i] == x:
-                plt.plot(aligned_spikes[i])
-        plt.ylim(min_in_test_data, max_in_test_data)
-        plt.title(f"All spikes in {x}")
-        plt.show()
+    #    for x in set(label):
+    #        for i in range(len(label)):
+    #            if label[i] == x:
+    #                plt.plot(aligned_spikes[i])
+    #        plt.ylim(min_in_test_data, max_in_test_data)
+    #        plt.title(f"All spikes in {x}")
+    #        plt.show()
 
-    for i in range(3):
+    for i in range(15):
         plt.plot(aligned_spikes[i])
         plt.show()
         plt.ylim(min_in_test_data, max_in_test_data)

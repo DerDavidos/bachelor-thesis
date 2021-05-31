@@ -14,7 +14,7 @@ OVERRIDE = False
 """"""""""""""""""""""""""""""""
 
 
-def load_train_val_test_data() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def load_train_val_test_data() -> Tuple[np.array, np.array, np.array]:
     """ Loads and returs the train, validation and test data from the simulation specified in
     config.py
 

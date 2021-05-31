@@ -6,6 +6,7 @@ import torch.nn as nn
 from sklearn.cluster import KMeans
 
 import autoencoder_functions
+import evaluate_functions
 from autoencoder import Autoencoder
 
 
@@ -32,29 +33,21 @@ class __ClusteringLoss:
         reconstruction_loss = nn.MSELoss()(seq_pred, seq_true)
 
         # Create spare representation and fit k-means on it
-        encode_seq_true = autoencoder_functions.encode_data(model, seq_true,
+        encode_seq_true = autoencoder_functions.encode_data(model, np.array(seq_true),
                                                             batch_size=len(seq_true))
 
         self.kmeans.fit(encode_seq_true)
 
-        all_cluster = []
-        for label in set(self.kmeans.labels_):
-            cluster = []
-            for i, spike in enumerate(seq_true):
-                if self.kmeans.labels_[i] == label:
-                    cluster.append(np.array(spike))
-            mean_cluster = np.mean(cluster, axis=0)
-            distances_in_cluster = []
-            for i, spike in enumerate(cluster):
-                distances_in_cluster.append(np.sqrt(np.abs(mean_cluster - spike)))
-            all_cluster.append(np.mean(distances_in_cluster))
+        mse_per_cluster = evaluate_functions.evaluate_clustering(data=np.array(seq_true),
+                                                                 labels=self.kmeans.labels_,
+                                                                 predictions=self.kmeans.labels_)
 
-        cluster_loss = np.mean(all_cluster) * 48
+        cluster_loss = np.mean(mse_per_cluster)
 
         # print(float(reconstruction_loss), cluster_loss)
         # reconstruction_loss /= min(100, epoch * 4)
         # cluster_loss *= min(100, epoch / 4)
-        loss = reconstruction_loss + cluster_loss / 4
+        loss = reconstruction_loss + cluster_loss
 
         # print(float(reconstruction_loss), cluster_loss, float(loss))
 
@@ -139,7 +132,7 @@ def train_model(model: Autoencoder, train_dataset: list, validation_dataset: lis
                                                     batch_size=batch_size,
                                                     train_with_clustering=train_with_clustering)
 
-        if validation_loss < best_loss:
+        if validation_loss < best_loss * 0.9995:
             best_loss = validation_loss
             best_model_wts = copy.deepcopy(model.state_dict())
 

@@ -2,21 +2,22 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def evaluate_clustering(data: np.ndarray, labels: list, predictions: list, plot: bool = False) -> \
-        [np.ndarray]:
+def evaluate_clustering(data: np.array, labels: list, predictions: list, plot: bool = False) -> \
+        [np.array]:
     """ Evaluate the clustering
 
     Parameters:
-        data (np.ndarray): Spikes that have been predicted
+        data (np.array): Spikes that have been predicted
         labels (list): All differnt labels
         predictions (list): Predicted label number of according spikes
         plot (bool): If to plot cluster
     Returns:
-         [np.ndarray]: Mean distance of spikes from the mean of the cluster
+         [np.array]: Mean distance of spikes from the mean of the cluster
     """
-    # Plot all spikes put in the same cluster
-    min_in_test_data = np.min(data)
-    max_in_test_data = np.max(data)
+
+    if plot:
+        min_in_test_data = np.min(data)
+        max_in_test_data = np.max(data)
 
     all_mean = []
     mse_per_cluster = []
@@ -32,8 +33,10 @@ def evaluate_clustering(data: np.ndarray, labels: list, predictions: list, plot:
         if len(cluster) != 0:
             mean_cluster = np.mean(cluster, axis=0)
             distances_in_cluster = []
-            for i, spike in enumerate(cluster):
-                distances_in_cluster.append(np.mean(np.sqrt(np.abs(mean_cluster - spike))))
+            for i, spike1 in enumerate(cluster):
+                for j, spike2 in enumerate(cluster):
+                    if i != j:
+                        distances_in_cluster.append(np.linalg.norm(spike1 - spike2))
             mse_per_cluster.append(np.mean(distances_in_cluster))
 
             if plot:

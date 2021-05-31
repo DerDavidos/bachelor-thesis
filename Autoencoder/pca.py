@@ -9,14 +9,14 @@ import data_loader
 import evaluate_functions
 
 
-def pca_clustering(n_components: int, train_data: np.ndarray, test_data: np.ndarray, n_cluster: int,
+def pca_clustering(n_components: int, train_data: np.array, test_data: np.array, n_cluster: int,
                    plot: bool = False) -> Tuple[KMeans, list]:
     """ Fits PCA and k-means on train data and evaluate on test data
 
     Parameters:
         n_components (int): Number of PCA components
-        train_data (np.ndarray): The data to fit the PCA and k-means on
-        test_data (np.ndarray): The data the clustering is evaluated by
+        train_data (np.array): The data to fit the PCA and k-means on
+        test_data (np.array): The data the clustering is evaluated by
         n_cluster (int): Number of cluster
         plot (bool): Plot train data cluster and all mean cluster together
     Returns:
@@ -62,10 +62,10 @@ def main():
     print(f"k-means inertia: {kmeans.inertia_}")
 
     # Evaluate
-    print("\nMean distance from spikes to mean spikes in each cluster")
+    print("\nAverage Euclidian distance from spikes to mean spikes in each cluster")
     for i, x in enumerate(mse_per_cluster):
         print(f"{i}: {x}")
-    print(f"Cluster mean: \033[31m{np.mean(mse_per_cluster)}\033[0m")
+    print(f"Average: \033[31m{np.mean(mse_per_cluster)}\033[0m")
 
 
 if __name__ == '__main__':

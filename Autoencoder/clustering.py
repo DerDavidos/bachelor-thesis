@@ -15,15 +15,15 @@ TRAINED_WITH_CLUSTERING = True
 """"""""""""""""""""""""""""""""
 
 
-def autoencoder_clustering(model: Autoencoder, train_data: np.ndarray, test_data: np.ndarray,
+def autoencoder_clustering(model: Autoencoder, train_data: np.array, test_data: np.array,
                            n_cluster: int,
                            plot: bool = False) -> Tuple[KMeans, list]:
     """ Fits k-means on train data and evaluate on test data
 
     Parameters:
         model (Autoencoder): The model with to reduce the dimensions
-        train_data (np.ndarray): The data to fit the k-means on
-        test_data (np.ndarray): The data the clustering is evaluated by
+        train_data (np.array): The data to fit the k-means on
+        test_data (np.array): The data the clustering is evaluated by
         n_cluster (int): Number of cluster
         plot (bool): Plot train data cluster and all mean cluster together
     Returns:
@@ -91,10 +91,11 @@ def main(trained_with_clustering: bool) -> None:
     # Evaluate
     print(f"k-means inertia: {kmeans.inertia_}")
 
-    print("\nSquared mean distance from spikes in each cluster to cluster mean")
+    # Evaluate
+    print("\nAverage Euclidian distance from spikes to mean spikes in each cluster")
     for i, x in enumerate(mse_per_cluster):
-        print(f"{i}: {x or 'Nan'}")
-    print(f"Mean of clusters: \033[31m{np.mean(mse_per_cluster)}\033[0m")
+        print(f"{i}: {x}")
+    print(f"Average: \033[31m{np.mean(mse_per_cluster)}\033[0m")
 
 
 if __name__ == '__main__':

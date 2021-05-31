@@ -79,13 +79,14 @@ def get_data_from_matlab(simulation_type: str):
         Path(path).mkdir(parents=True, exist_ok=True)
 
         labels = np.array(labels).reshape(-1)
-        for i in range(len(labels)):
-            labels[i] -= 1
-
-        print(len(labels), len(spikes))
+        new_labels = []
+        for i in range(1, len(labels), 2):
+            if int(labels[i]) != 0:
+                new_labels.append(int(labels[i] - 1))
+        labels = list(set(new_labels))
 
         np.save(f"{path}/spikes", np.array(spikes))
-        np.save(f"{path}/labels", labels)
+        np.save(f"{path}/labels", np.array(labels))
 
         print(f"Saved")
 
