@@ -1,45 +1,22 @@
 import pickle
 
-import numpy as np
 import torch
 
 import autoencoder_functions
 import config
-
-""""""""""""""""""""""""""""""""
-TRAINED_WITH_CLUSTERING = True
-""""""""""""""""""""""""""""""""
+import data_loader
 
 
-def plot_training(trained_with_clustering: bool = False) -> None:
+def plot_training() -> None:
     """Plots the training and validation loss over the epochs and some spikes encoded and then
-    decoded
+    decoded """
 
-    Parameters:
-        trained_with_clustering (int): If the training of the model to plot was perforemed with
-            clustering
+    model = torch.load(f"{config.MODEL_PATH}/model.pth")
 
-    """
-
-    if trained_with_clustering:
-        directory = f"models/{config.SIMULATION_TYPE}/" \
-                    f"simulation_{config.SIMULATION_NUMBER}_cluster_trained/" \
-                    f"sparse_{config.EMBEDDED_DIMENSION}"
-    else:
-        directory = f"models/{config.SIMULATION_TYPE}/" \
-                    f"simulation_{config.SIMULATION_NUMBER}/" \
-                    f"sparse_{config.EMBEDDED_DIMENSION}"
-
-    model = torch.load(f"{directory}/model.pth")
-    model = model
-
-    with open(f"{directory}/train_history", 'rb') as his:
+    with open(f"{config.MODEL_PATH}/train_history", 'rb') as his:
         history = pickle.load(his)
 
-    with open(f"data/{config.SIMULATION_TYPE}/simulation_{config.SIMULATION_NUMBER}/test_data.npy",
-              'rb') as file:
-        test_data = np.load(file)
-    test_data, _, _ = autoencoder_functions.create_dataset(test_data)
+    _, _, test_data = data_loader.load_train_val_test_data()
 
     print()
     print("Model architecture")
@@ -55,4 +32,4 @@ def plot_training(trained_with_clustering: bool = False) -> None:
 
 
 if __name__ == '__main__':
-    plot_training(trained_with_clustering=TRAINED_WITH_CLUSTERING)
+    plot_training()

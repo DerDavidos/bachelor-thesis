@@ -10,14 +10,10 @@ import data_loader
 import evaluate_functions
 from autoencoder import Autoencoder
 
-""""""""""""""""""""""""""""""""
-TRAINED_WITH_CLUSTERING = True
-""""""""""""""""""""""""""""""""
-
 
 def autoencoder_clustering(model: Autoencoder, train_data: np.array, test_data: np.array,
                            n_cluster: int,
-                           plot: bool = False) -> Tuple[KMeans, list]:
+                           plot: bool = False) -> Tuple[KMeans, list, list]:
     """ Fits k-means on train data and evaluate on test data
 
     Parameters:
@@ -31,14 +27,8 @@ def autoencoder_clustering(model: Autoencoder, train_data: np.array, test_data: 
                - list: Mean squarred error per cluster
     """
 
-    # Get min and max values for plot limit settings
-    if plot:
-        min_in_test_data = np.min(test_data)
-        max_in_test_data = np.max(test_data)
-
     # Init KMeans and fit it to the sparse representation of the training data
     kmeans = KMeans(
-        # init="random",
         n_clusters=n_cluster,
     )
 
@@ -51,42 +41,30 @@ def autoencoder_clustering(model: Autoencoder, train_data: np.array, test_data: 
                                                           batch_size=len(test_data))
     predictions = kmeans.predict(test_data_encoded)
 
-    mse_per_cluster = evaluate_functions.evaluate_clustering(data=test_data, labels=kmeans.labels_,
-                                                             predictions=predictions, plot=plot)
+    mse_per_cluster, kl_per_cluster = \
+        evaluate_functions.evaluate_clustering(data=test_data, labels=kmeans.labels_,
+                                               predictions=predictions, plot=plot)
 
-    return kmeans, mse_per_cluster
+    return kmeans, mse_per_cluster, kl_per_cluster
 
 
-def main(trained_with_clustering: bool) -> None:
+def main() -> None:
     """ Performs clustering using the trained autoencoder to reduce dimension on the test data set
-    for the simulation defined in config.py
-
-    Parameters:
-        trained_with_clustering:
-    """
-    if trained_with_clustering:
-        directory = f"models/{config.SIMULATION_TYPE}/" \
-                    f"simulation_{config.SIMULATION_NUMBER}_cluster_trained/" \
-                    f"sparse_{config.EMBEDDED_DIMENSION}"
-    else:
-        directory = f"models/{config.SIMULATION_TYPE}/" \
-                    f"simulation_{config.SIMULATION_NUMBER}/" \
-                    f"sparse_{config.EMBEDDED_DIMENSION}"
+    for the simulation defined in config.py """
 
     # Load train and test data
     train_data, _, test_data = data_loader.load_train_val_test_data()
 
     # Load model
-    model = torch.load(f'{directory}/model.pth')
-    model = model
+    model = torch.load(f'{config.MODEL_PATH}/model.pth')
 
     print(f"Number of clusters: {config.N_CLUSTER}")
 
-    kmeans, mse_per_cluster = autoencoder_clustering(model=model,
-                                                     train_data=train_data,
-                                                     test_data=test_data,
-                                                     n_cluster=config.N_CLUSTER,
-                                                     plot=True)
+    kmeans, mse_per_cluster, kl_per_cluster = autoencoder_clustering(model=model,
+                                                                     train_data=train_data,
+                                                                     test_data=test_data,
+                                                                     n_cluster=config.N_CLUSTER,
+                                                                     plot=True)
 
     # Evaluate
     print(f"k-means inertia: {kmeans.inertia_}")
@@ -97,6 +75,11 @@ def main(trained_with_clustering: bool) -> None:
         print(f"{i}: {x}")
     print(f"Average: \033[31m{np.mean(mse_per_cluster)}\033[0m")
 
+    print("\nAverage KL_Divergence from spikes to other spikes in same cluster")
+    for i, x in enumerate(kl_per_cluster):
+        print(f"{i}: {x}")
+    print(f"Average: \033[31m{np.mean(kl_per_cluster)}\033[0m")
+
 
 if __name__ == '__main__':
-    main(trained_with_clustering=TRAINED_WITH_CLUSTERING)
+    main()

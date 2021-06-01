@@ -19,30 +19,34 @@ def compare() -> None:
     print(f"Embedded dimension: {config.EMBEDDED_DIMENSION}")
 
     print("\nAutoencoder seperate training.")
-    model = torch.load(f"models/{config.SIMULATION_TYPE}/"
-                       f"simulation_{config.SIMULATION_NUMBER}/"
+    model = torch.load(f"models/{config.SIMULATION_TYPE}/n_cluster_{config.N_CLUSTER_SIMULATION}/"
+                       f"simulation_{config.SIMULATION_NUMBER}_not_cluster_trained/"
                        f"sparse_{config.EMBEDDED_DIMENSION}/model.pth")
-    model = model
-    _, mse_per_cluster = clustering.autoencoder_clustering(model=model, train_data=train_data,
-                                                           test_data=test_data,
-                                                           n_cluster=config.N_CLUSTER)
-    print(f"\033[31m{np.mean(mse_per_cluster)}\033[0m")
-
+    _, mse_per_cluster, kl_per_cluster = clustering.autoencoder_clustering(model=model,
+                                                                           train_data=train_data,
+                                                                           test_data=test_data,
+                                                                           n_cluster=config.N_CLUSTER)
+    print(f"Euclidian: \033[31m{np.mean(mse_per_cluster)}\033[0m")
+    print(f"KL-Divergence: \033[31m{np.mean(kl_per_cluster)}\033[0m")
+    
     print("\nAutoencoder trained with clustering.")
-    model = torch.load(f"models/{config.SIMULATION_TYPE}/"
+    model = torch.load(f"models/{config.SIMULATION_TYPE}/n_cluster_{config.N_CLUSTER_SIMULATION}/"
                        f"simulation_{config.SIMULATION_NUMBER}_cluster_trained/"
                        f"sparse_{config.EMBEDDED_DIMENSION}/model.pth")
-    model = model
-    _, mse_per_cluster = clustering.autoencoder_clustering(model=model, train_data=train_data,
-                                                           test_data=test_data,
-                                                           n_cluster=config.N_CLUSTER)
-    print(f"\033[31m{np.mean(mse_per_cluster)}\033[0m")
+    _, mse_per_cluster, kl_per_cluster = clustering.autoencoder_clustering(model=model,
+                                                                           train_data=train_data,
+                                                                           test_data=test_data,
+                                                                           n_cluster=config.N_CLUSTER)
+    print(f"Euclidian: \033[31m{np.mean(mse_per_cluster)}\033[0m")
+    print(f"KL-Divergence: \033[31m{np.mean(kl_per_cluster)}\033[0m")
 
     print("\nPCA.")
-    _, mse_per_cluster = pca.pca_clustering(n_components=config.EMBEDDED_DIMENSION,
-                                            train_data=train_data,
-                                            test_data=test_data, n_cluster=config.N_CLUSTER)
-    print(f"\033[31m{np.mean(mse_per_cluster)}\033[0m")
+    _, mse_per_cluster, kl_per_cluster = pca.pca_clustering(n_components=config.EMBEDDED_DIMENSION,
+                                                            train_data=train_data,
+                                                            test_data=test_data,
+                                                            n_cluster=config.N_CLUSTER)
+    print(f"Euclidian: \033[31m{np.mean(mse_per_cluster)}\033[0m")
+    print(f"KL-Divergence: \033[31m{np.mean(kl_per_cluster)}\033[0m")
 
 
 if __name__ == '__main__':

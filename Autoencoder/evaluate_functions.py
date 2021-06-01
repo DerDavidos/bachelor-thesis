@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.stats import entropy
 
 
 def evaluate_clustering(data: np.array, labels: list, predictions: list, plot: bool = False) -> \
@@ -15,12 +16,13 @@ def evaluate_clustering(data: np.array, labels: list, predictions: list, plot: b
          [np.array]: Mean distance of spikes from the mean of the cluster
     """
 
-    if plot:
-        min_in_test_data = np.min(data)
-        max_in_test_data = np.max(data)
+    min_in_test_data = np.min(data)
+    max_in_test_data = np.max(data)
+    kl_addition = min_in_test_data * -1 + 0.000001
 
     all_mean = []
-    mse_per_cluster = []
+    euclidian_per_cluster = []
+    kl_per_cluster = []
 
     for label in set(labels):
         cluster = []
@@ -32,18 +34,27 @@ def evaluate_clustering(data: np.array, labels: list, predictions: list, plot: b
 
         if len(cluster) != 0:
             mean_cluster = np.mean(cluster, axis=0)
-            distances_in_cluster = []
-            for i, spike1 in enumerate(cluster):
-                for j, spike2 in enumerate(cluster):
-                    if i != j:
-                        distances_in_cluster.append(np.linalg.norm(spike1 - spike2))
-            mse_per_cluster.append(np.mean(distances_in_cluster))
+            euclidian_in_cluster = []
+            kl_in_cluster = []
+            for i1, spike1 in enumerate(cluster):
+
+                spike1 = spike1 + kl_addition
+                for i2, spike2 in enumerate(cluster):
+                    if i1 != i2:
+                        spike2 = spike2 + kl_addition
+                        euclidian_in_cluster.append(np.linalg.norm(spike1 - spike2))
+
+                        kl_in_cluster.append(entropy(spike1, spike2))
+
+            euclidian_per_cluster.append(np.mean(euclidian_in_cluster))
+
+            kl_per_cluster.append(np.mean(kl_in_cluster) * 100)
 
             if plot:
                 all_mean.append(mean_cluster)
         else:
             mean_cluster = 0
-            mse_per_cluster.append(0)
+            euclidian_per_cluster.append(0)
 
         if plot:
             plt.title(f"All spikes clustered into {label} (cluster mean in yellow)")
@@ -58,4 +69,4 @@ def evaluate_clustering(data: np.array, labels: list, predictions: list, plot: b
             plt.plot(x)
         plt.show()
 
-    return mse_per_cluster
+    return euclidian_per_cluster, kl_per_cluster

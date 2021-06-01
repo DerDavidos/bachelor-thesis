@@ -10,7 +10,7 @@ import evaluate_functions
 
 
 def pca_clustering(n_components: int, train_data: np.array, test_data: np.array, n_cluster: int,
-                   plot: bool = False) -> Tuple[KMeans, list]:
+                   plot: bool = False) -> Tuple[KMeans, list, list]:
     """ Fits PCA and k-means on train data and evaluate on test data
 
     Parameters:
@@ -27,8 +27,8 @@ def pca_clustering(n_components: int, train_data: np.array, test_data: np.array,
     # Init PCA and KMeans
     pca = PCA(n_components=n_components)
     kmeans = KMeans(
-        # init="random",
         n_clusters=n_cluster,
+        # algorithm="elkan"
     )
 
     # Fit PCA and KMeans to train data
@@ -41,10 +41,13 @@ def pca_clustering(n_components: int, train_data: np.array, test_data: np.array,
     transformed_test_data = pca.transform(test_data)
     predictions = kmeans.predict(transformed_test_data)
 
-    mse_per_cluster = evaluate_functions.evaluate_clustering(data=test_data, labels=kmeans.labels_,
-                                                             predictions=predictions, plot=plot)
+    euclidian_per_cluster, kl_per_cluster = \
+        evaluate_functions.evaluate_clustering(data=test_data,
+                                               labels=kmeans.labels_,
+                                               predictions=predictions,
+                                               plot=plot)
 
-    return kmeans, mse_per_cluster
+    return kmeans, euclidian_per_cluster, kl_per_cluster
 
 
 def main():
@@ -54,18 +57,24 @@ def main():
     # Load train and test data
     train_data, _, test_data = data_loader.load_train_val_test_data()
 
-    kmeans, mse_per_cluster = pca_clustering(n_components=config.EMBEDDED_DIMENSION,
-                                             train_data=train_data, test_data=test_data,
-                                             n_cluster=config.N_CLUSTER, plot=True)
+    kmeans, euclidian_per_cluster, kl_per_cluster = \
+        pca_clustering(n_components=config.EMBEDDED_DIMENSION,
+                       train_data=train_data, test_data=test_data,
+                       n_cluster=config.N_CLUSTER, plot=True)
 
     # print(kmeans.cluster_centers_)
     print(f"k-means inertia: {kmeans.inertia_}")
 
     # Evaluate
-    print("\nAverage Euclidian distance from spikes to mean spikes in each cluster")
-    for i, x in enumerate(mse_per_cluster):
+    print("\nAverage Euclidian distance from spikes to other spikes in same cluster")
+    for i, x in enumerate(euclidian_per_cluster):
         print(f"{i}: {x}")
-    print(f"Average: \033[31m{np.mean(mse_per_cluster)}\033[0m")
+    print(f"Average: \033[31m{np.mean(euclidian_per_cluster)}\033[0m")
+
+    print("\nAverage KL_Divergence from spikes to other spikes in same cluster")
+    for i, x in enumerate(kl_per_cluster):
+        print(f"{i}: {x}")
+    print(f"Average: \033[31m{np.mean(kl_per_cluster)}\033[0m")
 
 
 if __name__ == '__main__':
