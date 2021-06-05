@@ -64,29 +64,28 @@ def get_data_from_matlab(simulation_type: str):
 
     if simulation_type == "own_generated":
 
-        sims = [-1]
-        for x in os.listdir("../Autoencoder/spikes/own_generated"):
-            sims.append(int(x.split("_")[1]))
-        sim_number = max(sims) + 1
-
         eng = matlab.engine.start_matlab()
         spikes, labels = eng.sendDataToPython(1, 0, nargout=2)
         eng.close()
-
-        path = f"{pathlib.Path(__file__).parent.absolute()}/../Autoencoder/spikes/own_generated/" \
-               f"simulation_{sim_number}"
-
-        Path(path).mkdir(parents=True, exist_ok=True)
 
         labels = np.array(labels).reshape(-1)
         new_labels = []
         for i in range(1, len(labels), 2):
             if int(labels[i]) != 0:
                 new_labels.append(int(labels[i] - 1))
-        labels = list(set(new_labels))
+        labels = len(set(new_labels))
 
-        np.save(f"{path}/spikes", np.array(spikes))
-        np.save(f"{path}/labels", np.array(labels))
+        path = f"{pathlib.Path(__file__).parent.absolute()}/../Autoencoder/spikes/own_generated/" \
+               f"n_cluster_{labels}"
+
+        Path(path).mkdir(parents=True, exist_ok=True)
+
+        sims = [-1]
+        for x in os.listdir(f"../Autoencoder/spikes/own_generated/n_cluster_{labels}"):
+            sims.append(int(x.split("_")[1].split(".")[0]))
+        sim_number = max(sims) + 1
+
+        np.save(f"{path}/simulation_{sim_number}", np.array(spikes))
 
         print(f"Saved")
 

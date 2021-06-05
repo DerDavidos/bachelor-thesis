@@ -9,12 +9,9 @@ import config
 import data_loader
 
 
-def train_model(train_with_clustering: bool,
-                n_cluster_simulation: int = config.N_CLUSTER_SIMULATION,
-                simulation_number: int = config.SIMULATION_NUMBER,
-                embedded_dim: int = config.EMBEDDED_DIMENSION) -> None:
+def train_model(train_with_clustering: bool, n_cluster_simulation: int, simulation_number: int,
+                embedded_dim: int) -> None:
     """ Trains the Autoencoder PyTorch model from autoencoder.py with the setting in config.py
-
     Parameters:
         train_with_clustering (bool):
         embedded_dim (int):
@@ -22,11 +19,11 @@ def train_model(train_with_clustering: bool,
         n_cluster_simulation (int):
     """
     if train_with_clustering:
-        model_path = f"models/{config.SIMULATION_TYPE}/n_cluster_{n_cluster_simulation}/" \
+        model_path = f"../models/{config.SIMULATION_TYPE}/n_cluster_{n_cluster_simulation}/" \
                      f"simulation_{simulation_number}_cluster_trained/" \
                      f"sparse_{embedded_dim}"
     else:
-        model_path = f"models/{config.SIMULATION_TYPE}/n_cluster_{n_cluster_simulation}/" \
+        model_path = f"../models/{config.SIMULATION_TYPE}/n_cluster_{n_cluster_simulation}/" \
                      f"simulation_{simulation_number}_not_cluster_trained/" \
                      f"sparse_{embedded_dim}"
 
@@ -53,31 +50,29 @@ def train_model(train_with_clustering: bool,
 
     # Create Autoencoder model and print it's architecture
     model = autoencoder.Autoencoder(input_dim=input_dim, embedded_dim=embedded_dim)
-    model = model
     print("\nModel architecture")
     print(model)
 
     # Train Autoencoder
     _, history = autoencoder_training.train_model(
-        model,
+        model=model,
         train_dataset=train_data,
         validation_dataset=validation_data,
         model_path=model_path,
-        train_with_clustering=config.TRAINED_WITH_CLUSTERING,
-        n_cluster=config.N_CLUSTER,
+        train_with_clustering=train_with_clustering,
+        n_cluster=n_cluster_simulation,
     )
 
     # Save training history
     with open(f"{model_path}/train_history", 'wb') as his:
         pickle.dump(history, his, pickle.HIGHEST_PROTOCOL)
 
-    # Test the model with the test data
-    # test_model.plot_training(simulation_number=simulation_number,
-    #                         trained_with_clustering=train_with_clustering)
-
 
 if __name__ == '__main__':
     # Train model with and without combined clustering loss
-    for c in config.TRAIN_CLUSTERING:
-        for e in config.TRAIN_EMBEDDED_DIMENSIONS:
-            train_model(train_with_clustering=c, embedded_dim=e)
+    for n_cluster in config.TRAIN_N_CLUSTER_SIMULATION:
+        for simulation_number in config.TRAIN_SIMULATION_NUMBER:
+            for clustering in config.TRAIN_CLUSTERING:
+                for embedded in config.TRAIN_EMBEDDED_DIMENSIONS:
+                    train_model(train_with_clustering=clustering, n_cluster_simulation=n_cluster,
+                                simulation_number=simulation_number, embedded_dim=embedded)

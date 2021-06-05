@@ -8,7 +8,8 @@ from sklearn.model_selection import train_test_split
 import config
 
 
-def load_train_val_test_data() -> Tuple[np.array, np.array, np.array]:
+def load_train_val_test_data(data_path: str = config.DATA_PATH) \
+        -> Tuple[np.array, np.array, np.array]:
     """ Loads and returs the train, validation and test data from the simulation specified in
     config.py
 
@@ -16,15 +17,15 @@ def load_train_val_test_data() -> Tuple[np.array, np.array, np.array]:
         tuple: train, validation and test data as numpy arrays
     """
 
-    if not os.path.exists(config.DATA_PATH):
+    if not os.path.exists(data_path):
         print("Spike data does not exist.")
         return None, None, None
 
-    with open(f"{config.DATA_PATH}/train_data.npy", 'rb') as file:
+    with open(f"{data_path}/train_data.npy", 'rb') as file:
         train_data = np.load(file, allow_pickle=True)
-    with open(f"{config.DATA_PATH}/validation_data.npy", 'rb') as file:
+    with open(f"{data_path}/validation_data.npy", 'rb') as file:
         validation_data = np.load(file, allow_pickle=True)
-    with open(f"{config.DATA_PATH}/test_data.npy", 'rb') as file:
+    with open(f"{data_path}/test_data.npy", 'rb') as file:
         test_data = np.load(file, allow_pickle=True)
 
     print(f"Train data size: {len(train_data)}, Test data size: {len(test_data)}, "

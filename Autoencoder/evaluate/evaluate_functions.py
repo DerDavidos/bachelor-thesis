@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from scipy.stats import entropy
 
 
-def evaluate_clustering(data: np.array, labels: list, predictions: list, plot: bool = False) -> \
+def evaluate_clustering(data: np.array, labels: list, predictions: list) -> \
         [np.array]:
     """ Evaluate the clustering
 
@@ -11,16 +11,12 @@ def evaluate_clustering(data: np.array, labels: list, predictions: list, plot: b
         data (np.array): Spikes that have been predicted
         labels (list): All differnt labels
         predictions (list): Predicted label number of according spikes
-        plot (bool): If to plot cluster
     Returns:
          [np.array]: Mean distance of spikes from the mean of the cluster
     """
 
-    min_in_test_data = np.min(data)
-    max_in_test_data = np.max(data)
-    kl_addition = min_in_test_data * -1 + 0.000001
+    kl_addition = np.min(data) * -1 + 0.000001
 
-    all_mean = []
     euclidian_per_cluster = []
     kl_per_cluster = []
 
@@ -33,7 +29,6 @@ def evaluate_clustering(data: np.array, labels: list, predictions: list, plot: b
                 plt.plot(spike)
 
         if len(cluster) != 0:
-            mean_cluster = np.mean(cluster, axis=0)
             euclidian_in_cluster = []
             kl_in_cluster = []
             for i1, spike1 in enumerate(cluster):
@@ -50,23 +45,47 @@ def evaluate_clustering(data: np.array, labels: list, predictions: list, plot: b
 
             kl_per_cluster.append(np.mean(kl_in_cluster) * 100)
 
-            if plot:
-                all_mean.append(mean_cluster)
         else:
-            mean_cluster = 0
             euclidian_per_cluster.append(0)
 
-        if plot:
-            plt.title(f"All spikes clustered into {label} (cluster mean in yellow)")
-            plt.plot(mean_cluster, color="yellow", linewidth=2)
-            plt.ylim(min_in_test_data, max_in_test_data)
-            plt.show()
+    return euclidian_per_cluster, kl_per_cluster
 
-    if plot:
-        plt.title(f"All cluster means")
+
+def plot_cluster(data: np.array, labels: list, predictions: list) -> None:
+    """ Plots Cluster
+
+    Parameters:
+        data (np.array): Spikes that have been predicted
+        labels (list): All differnt labels
+        predictions (list): Predicted label number of according spikes
+    """
+
+    min_in_test_data = np.min(data)
+    max_in_test_data = np.max(data)
+
+    all_mean = []
+
+    for label in labels:
+        cluster = []
+
+        for i, spike in enumerate(data):
+            if predictions[i] == label:
+                cluster.append(spike)
+                plt.plot(spike)
+
+        if len(cluster) != 0:
+            mean_cluster = np.mean(cluster, axis=0)
+        else:
+            mean_cluster = 0
+
+        all_mean.append(mean_cluster)
+        plt.title(f"All spikes clustered into {label} (cluster mean in yellow)")
+        plt.plot(mean_cluster, color="yellow", linewidth=2)
         plt.ylim(min_in_test_data, max_in_test_data)
-        for x in all_mean:
-            plt.plot(x)
         plt.show()
 
-    return euclidian_per_cluster, kl_per_cluster
+    plt.title(f"All cluster means")
+    plt.ylim(min_in_test_data, max_in_test_data)
+    for x in all_mean:
+        plt.plot(x)
+    plt.show()
