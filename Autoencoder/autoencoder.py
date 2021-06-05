@@ -10,10 +10,10 @@ class Encoder(nn.Module):
 
         hidden_dim = int(input_dim / 2)
 
-        self.convolution_1d_1 = nn.Conv1d(1, 5, kernel_size=11, padding=5, padding_mode="replicate")
+        self.convolution_1d_1 = nn.Conv1d(1, 5, kernel_size=16, padding=8, padding_mode="replicate")
         self.leaky_re_lu_1 = nn.LeakyReLU()
 
-        self.convolution_1d_2 = nn.Conv1d(5, 8, kernel_size=5, padding=2, padding_mode="replicate")
+        self.convolution_1d_2 = nn.Conv1d(5, 8, kernel_size=8, padding=3, padding_mode="replicate")
         self.leaky_re_lu_2 = nn.LeakyReLU()
 
         self.max_pooling = nn.MaxPool1d(2)
@@ -38,6 +38,7 @@ class Encoder(nn.Module):
 
     def forward(self, x: torch.Tensor, batch_size: int):
         """ Propages the data in Tensor x through the Encoder
+
         Parameters:
             x (torch.Tensor): Data
             batch_size (int): Size of the data batch
@@ -78,14 +79,15 @@ class Decoder(nn.Module):
 
         self.up_sample = nn.Upsample(output_dim)
 
-        self.transpose_convolution_1d_2 = nn.ConvTranspose1d(1, 8, kernel_size=5, padding=2)
+        self.transpose_convolution_1d_2 = nn.ConvTranspose1d(1, 8, kernel_size=8, padding=3)
 
-        self.transpose_convolution_1d_1 = nn.ConvTranspose1d(8, 5, kernel_size=11, padding=5)
+        self.transpose_convolution_1d_1 = nn.ConvTranspose1d(8, 5, kernel_size=16, padding=8)
 
         self.transpose_convolution_1d_resize = nn.ConvTranspose1d(5, 1, kernel_size=1)
 
     def forward(self, x: torch.Tensor, batch_size: int) -> torch.Tensor:
         """ Propages the data in Tensor x through the Decoder
+
         Parameters:
             x (torch.Tensor): Data
             batch_size (int): Size of the data batch
@@ -122,6 +124,7 @@ class Autoencoder(nn.Module):
 
     def forward(self, x: torch.Tensor):
         """ Propages the data in Tensor x through the Autoencoder
+
         Parameters:
             x (torch.Tensor): Data
         Returns:
@@ -129,7 +132,7 @@ class Autoencoder(nn.Module):
         """
 
         if len(x.shape) != 3:
-            raise SyntaxError("Wrong input dimension")
+            raise SyntaxError('Wrong input dimension')
 
         batch_size = x.shape[0]
         x = self.__encoder(x, batch_size)

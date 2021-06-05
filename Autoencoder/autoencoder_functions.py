@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from autoencoder import Autoencoder
 
 
-def predict(model: Autoencoder, dataset: list):
+def predict(model: Autoencoder, dataset: np.array) -> np.array:
     predictions, losses = [], []
     criterion = nn.L1Loss(reduction='sum')
     with torch.no_grad():
@@ -24,21 +24,21 @@ def predict(model: Autoencoder, dataset: list):
     return predictions, losses
 
 
-def test_reconstructions(model: Autoencoder, test_dataset: list, max_graphs: int = 15):
+def test_reconstructions(model: Autoencoder, test_dataset: np.array, max_graphs: int = 15):
     predictions, pred_losses = predict(model, test_dataset)
 
-    print("Number of test spikes:", len(test_dataset))
-    print("Average prediction loss:", sum(pred_losses) / len(pred_losses))
+    print(f'Number of test spikes: {len(test_dataset)}')
+    print(f'Average prediction loss: {sum(pred_losses) / len(pred_losses)}')
 
     for i in range(min(len(test_dataset), max_graphs)):
         plt.plot(test_dataset[i])
         plt.plot(predictions[i])
-        plt.title("Test spike " + str(i))
+        plt.title('Test spike ' + str(i))
         plt.show()
 
 
-def encode_data(model: Autoencoder, data: np.array, batch_size: int):
-    """ Uses the Encoder component of the Autoencoder to encode the data
+def encode_data(model: Autoencoder, data: np.array, batch_size: int) -> np.array:
+    """ Uses the Encoder component of the Autoencoder to encode data
 
     Parameters:
         model: The Autoencoder model to encode the data with
@@ -63,8 +63,8 @@ def encode_data(model: Autoencoder, data: np.array, batch_size: int):
     return data
 
 
-def decode_data(model: Autoencoder, data: list, batch_size: int) -> np.array:
-    """ Uses the Decoder component of the Autoencoder to decode the data
+def decode_data(model: Autoencoder, data: np.array, batch_size: int) -> np.array:
+    """ Uses the Decoder component of the Autoencoder to decode data
 
     Parameters:
         model: The Autoencoder model to decode the data with
@@ -74,7 +74,6 @@ def decode_data(model: Autoencoder, data: list, batch_size: int) -> np.array:
          np.narray: The decoded data
     """
 
-    data = np.array(data)
     data = torch.tensor(data).float()
     if len(data.shape) == 1:
         data = data.reshape(-1, 1)

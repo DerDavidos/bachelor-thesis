@@ -9,9 +9,9 @@ import os
 """"""""""""""""""""""""""""""""
 # pedreira, martinez, own_generated
 SIMULATION_TYPES = [
-    # "pedreira",
-    # "martinez",
-    "own_generated"
+    # 'pedreira',
+    # 'martinez',
+    'own_generated'
 ]
 """"""""""""""""""""""""""""""""
 
@@ -23,7 +23,7 @@ def get_data_from_matlab(simulation_type: str):
         simulation_type: Which simulation type to load spikes from
     """
     print(simulation_type)
-    if simulation_type == "pedreira":
+    if simulation_type == 'pedreira':
         for simulation in chain(range(0, 9), range(89, 95)):
             eng = matlab.engine.start_matlab()
             # adding one for Matlab counting
@@ -31,18 +31,17 @@ def get_data_from_matlab(simulation_type: str):
 
             spikes = np.array(spikes)
 
-            path = f"{pathlib.Path(__file__).parent.absolute()}/../Autoencoder/spikes/pedreira/" \
-                   f"simulation_{simulation}"
+            path = f'{pathlib.Path(__file__).parent.absolute()}/../Autoencoder/spikes/pedreira/simulation_{simulation}'
 
             Path(path).mkdir(parents=True, exist_ok=True)
 
-            np.save(f"{path}/spikes", spikes)
+            np.save(f'{path}/spikes', spikes)
 
             print(spikes.shape)
-            print(f"Saved {simulation}")
+            print(f'Saved {simulation}')
             eng.close()
 
-    if simulation_type == "martinez":
+    if simulation_type == 'martinez':
         for simulation in range(5):
             eng = matlab.engine.start_matlab()
 
@@ -51,18 +50,17 @@ def get_data_from_matlab(simulation_type: str):
 
             spikes = np.array(spikes)
 
-            path = f"{pathlib.Path(__file__).parent.absolute()}/../Autoencoder/spikes/pedreira/" \
-                   f"simulation_{simulation}"
+            path = f'{pathlib.Path(__file__).parent.absolute()}/../Autoencoder/spikes/pedreira/simulation_{simulation}'
 
             Path(path).mkdir(parents=True, exist_ok=True)
 
-            np.save(f"{path}/spikes", spikes)
+            np.save(f'{path}/spikes', spikes)
 
             print(spikes.shape)
-            print(f"Saved {simulation}")
+            print(f'Saved {simulation}')
             eng.close()
 
-    if simulation_type == "own_generated":
+    if simulation_type == 'own_generated':
 
         eng = matlab.engine.start_matlab()
         spikes, labels = eng.sendDataToPython(1, 0, nargout=2)
@@ -75,19 +73,18 @@ def get_data_from_matlab(simulation_type: str):
                 new_labels.append(int(labels[i] - 1))
         labels = len(set(new_labels))
 
-        path = f"{pathlib.Path(__file__).parent.absolute()}/../Autoencoder/spikes/own_generated/" \
-               f"n_cluster_{labels}"
+        path = f'{pathlib.Path(__file__).parent.absolute()}/../Autoencoder/spikes/own_generated/n_cluster_{labels}'
 
         Path(path).mkdir(parents=True, exist_ok=True)
 
         sims = [-1]
-        for x in os.listdir(f"../Autoencoder/spikes/own_generated/n_cluster_{labels}"):
-            sims.append(int(x.split("_")[1].split(".")[0]))
+        for x in os.listdir(f'../Autoencoder/spikes/own_generated/n_cluster_{labels}'):
+            sims.append(int(x.split('_')[1].split('.')[0]))
         sim_number = max(sims) + 1
 
-        np.save(f"{path}/simulation_{sim_number}", np.array(spikes))
+        np.save(f'{path}/simulation_{sim_number}', np.array(spikes))
 
-        print(f"Saved")
+        print(f'Saved')
 
 
 if __name__ == '__main__':

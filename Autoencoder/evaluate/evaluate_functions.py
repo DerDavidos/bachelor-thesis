@@ -15,7 +15,7 @@ def evaluate_clustering(data: np.array, labels: list, predictions: list) -> \
          [np.array]: Mean distance of spikes from the mean of the cluster
     """
 
-    kl_addition = np.min(data) * -1 + 0.000001
+    kl_addition = np.min(data) * -1 + 0.00001
 
     euclidian_per_cluster = []
     kl_per_cluster = []
@@ -26,7 +26,6 @@ def evaluate_clustering(data: np.array, labels: list, predictions: list) -> \
         for i, spike in enumerate(data):
             if predictions[i] == label:
                 cluster.append(spike)
-                plt.plot(spike)
 
         if len(cluster) != 0:
             euclidian_in_cluster = []
@@ -79,12 +78,12 @@ def plot_cluster(data: np.array, labels: list, predictions: list) -> None:
             mean_cluster = 0
 
         all_mean.append(mean_cluster)
-        plt.title(f"All spikes clustered into {label} (cluster mean in yellow)")
-        plt.plot(mean_cluster, color="yellow", linewidth=2)
+        plt.title(f'All spikes clustered into {label} (cluster mean in yellow)')
+        plt.plot(mean_cluster, color='yellow', linewidth=2)
         plt.ylim(min_in_test_data, max_in_test_data)
         plt.show()
 
-    plt.title(f"All cluster means")
+    plt.title(f'All cluster means')
     plt.ylim(min_in_test_data, max_in_test_data)
     for x in all_mean:
         plt.plot(x)
