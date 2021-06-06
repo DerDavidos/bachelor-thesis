@@ -3,20 +3,20 @@ import pickle
 import torch
 
 import autoencoder_functions
-import config
 import data_loader
+from configs import test_model as config
 
 
 def plot_training() -> None:
     """Plots the training and validation loss over the epochs and some spikes encoded and then
     decoded """
 
-    model = torch.load(f'{config.TEST_MODEL_PATH}/model.pth')
+    model = torch.load(f'{config.MODEL_PATH}/model.pth')
 
-    with open(f'{config.TEST_MODEL_PATH}/train_history', 'rb') as his:
+    with open(f'{config.MODEL_PATH}/train_history', 'rb') as his:
         history = pickle.load(his)
 
-    _, _, test_data = data_loader.load_train_val_test_data(config.TEST_DATA_PATH)
+    _, _, test_data = data_loader.load_train_val_test_data(config.DATA_PATH)
 
     print()
     print('Model architecture')
@@ -24,7 +24,7 @@ def plot_training() -> None:
 
     print()
     print('Example encoded spikes')
-    print(autoencoder_functions.encode_data(model=model, data=test_data[0]))
+    print(autoencoder_functions.encode_data(model=model, data=test_data[0], batch_size=1))
     print()
 
     autoencoder_functions.plot_history(history=history)

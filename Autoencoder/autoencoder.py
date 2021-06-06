@@ -10,10 +10,10 @@ class Encoder(nn.Module):
 
         hidden_dim = int(input_dim / 2)
 
-        self.convolution_1d_1 = nn.Conv1d(1, 5, kernel_size=16, padding=8, padding_mode="replicate")
+        self.convolution_1d_1 = nn.Conv1d(1, 5, kernel_size=9, padding=4, padding_mode="replicate")
         self.leaky_re_lu_1 = nn.LeakyReLU()
 
-        self.convolution_1d_2 = nn.Conv1d(5, 8, kernel_size=8, padding=3, padding_mode="replicate")
+        self.convolution_1d_2 = nn.Conv1d(5, 5, kernel_size=5, padding=2, padding_mode="replicate")
         self.leaky_re_lu_2 = nn.LeakyReLU()
 
         self.max_pooling = nn.MaxPool1d(2)

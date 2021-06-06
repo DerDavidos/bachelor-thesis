@@ -3,10 +3,10 @@ import torch
 from sklearn.cluster import KMeans
 
 import autoencoder_functions
-import config
 import data_loader
+import evaluate_functions
 from autoencoder import Autoencoder
-from evaluate import evaluate_functions
+from configs import simulation as config
 
 
 class AutoencoderClusterer:
@@ -50,7 +50,13 @@ def main(evaluate: bool) -> None:
     train_data, _, test_data = data_loader.load_train_val_test_data(config.DATA_PATH)
 
     # Load model
-    model = torch.load(f'{config.MODEL_PATH}/model.pth')
+    if config.TRAINED_WITH_CLUSTERING:
+        model_path = f'models/{config.SIMULATION_TYPE}/n_cluster_{config.N_CLUSTER}/' \
+                     f'simulation_{config.SIMULATION_NUMBER}_cluster_trained/sparse_{config.EMBEDDED_DIMENSION}'
+    else:
+        model_path = f'models/{config.SIMULATION_TYPE}/n_cluster_{config.N_CLUSTER}/' \
+                     f'simulation_{config.SIMULATION_NUMBER}_not_cluster_trained/sparse_{config.EMBEDDED_DIMENSION}'
+    model = torch.load(f'{model_path}/model.pth')
 
     pca_clusterer = AutoencoderClusterer(model=model, n_cluster=config.N_CLUSTER, train_data=train_data)
 

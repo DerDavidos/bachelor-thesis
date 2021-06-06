@@ -2,9 +2,9 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
-import config
 import data_loader
-from evaluate import evaluate_functions
+import evaluate_functions
+from configs import simulation as config
 
 
 class PcaClusterer:

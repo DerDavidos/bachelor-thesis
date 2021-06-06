@@ -2,8 +2,8 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
-import config
 import evaluate_functions
+from configs import evaluate as config
 
 
 def determinate_number_of_cluster(data) -> int:

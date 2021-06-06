@@ -1,6 +1,12 @@
 import numpy as np
+import torch
 from matplotlib import pyplot as plt
 from scipy.stats import entropy
+
+import autoencoder_clustering
+import data_loader
+import pca_clustering
+from configs import evaluate as config
 
 
 def evaluate_clustering(data: np.array, labels: list, predictions: list) -> \
@@ -88,3 +94,33 @@ def plot_cluster(data: np.array, labels: list, predictions: list) -> None:
     for x in all_mean:
         plt.plot(x)
     plt.show()
+
+
+def evaluate_cluster_dimension(cluster, dimension):
+    print(f'Evaluating: Cluster: {cluster}, Dimension: {dimension}')
+
+    data_path = f'data/{config.SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.SIMULATION_NUMBER}'
+    # Load train and test data
+    train_data, _, test_data = data_loader.load_train_val_test_data(data_path)
+
+    model = torch.load(f'models/{config.SIMULATION_TYPE}/n_cluster_{cluster}/'
+                       f'simulation_{config.SIMULATION_NUMBER}_not_cluster_trained/sparse_{dimension}/model.pth')
+    clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
+    predictions = clusterer.predict(test_data)
+    euclidian_per_cluster_0, kl_per_cluster_0 = \
+        evaluate_clustering(data=test_data, labels=clusterer.labels, predictions=predictions)
+
+    model = torch.load(f'models/{config.SIMULATION_TYPE}/n_cluster_{cluster}/'
+                       f'simulation_{config.SIMULATION_NUMBER}_cluster_trained/sparse_{dimension}/model.pth')
+    clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
+    predictions = clusterer.predict(test_data)
+    euclidian_per_cluster_1, kl_per_cluster_1 = \
+        evaluate_clustering(data=test_data, labels=clusterer.labels, predictions=predictions)
+
+    pca_clusterer = pca_clustering.PcaClusterer(n_components=dimension, n_cluster=cluster, train_data=train_data)
+    predictions = pca_clusterer.predict(test_data)
+    euclidian_per_cluster_2, kl_per_cluster_2 = \
+        evaluate_clustering(data=test_data, labels=pca_clusterer.labels, predictions=predictions)
+
+    return [np.mean(euclidian_per_cluster_0), np.mean(euclidian_per_cluster_1), np.mean(euclidian_per_cluster_2)], \
+           [np.mean(kl_per_cluster_0), np.mean(kl_per_cluster_1), np.mean(kl_per_cluster_2)]

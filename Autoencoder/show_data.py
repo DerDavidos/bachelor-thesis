@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-import config
+from configs import config
 
 
 def show_all_spikes() -> None:

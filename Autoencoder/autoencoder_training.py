@@ -5,8 +5,8 @@ from scipy.stats import entropy
 from sklearn.cluster import KMeans
 
 import autoencoder_functions
-import config
 from autoencoder import Autoencoder
+from configs import config
 
 
 class __ClusteringLoss:

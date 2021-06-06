@@ -5,7 +5,7 @@ from typing import Tuple
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-import config
+from configs import data_loader as config
 
 
 def load_train_val_test_data(data_path: str) -> Tuple[np.array, np.array, np.array]:
@@ -16,8 +16,7 @@ def load_train_val_test_data(data_path: str) -> Tuple[np.array, np.array, np.arr
     """
 
     if not os.path.exists(data_path):
-        print('Spike data does not exist.')
-        return None, None, None
+        raise FileNotFoundError(f'Data does not exist at {data_path}')
 
     with open(f'{data_path}/train_data.npy', 'rb') as file:
         train_data = np.load(file, allow_pickle=True)
