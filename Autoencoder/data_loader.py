@@ -9,10 +9,14 @@ from configs import data_loader as config
 
 
 def load_train_val_test_data(data_path: str) -> Tuple[np.array, np.array, np.array]:
-    """ Loads and returs the train, validation and test data from the simulation specified in config.py
+    """ Loads and returns the train, validation and test data from the simulation specified in config.py
 
+    Parameters:
+        data_path (str): Path to data directory
     Returns:
-        tuple: train, validation and test data as numpy arrays
+        tuple (np.array): train, validation and test data
+    Raises:
+        FileNotFoundError: If path to data does not exist
     """
 
     if not os.path.exists(data_path):
@@ -43,6 +47,7 @@ def save_train_val_test_data(simulation_type: str, n_cluster: str, simulation_nu
         validation_data (list): Validation data set
         test_data (list): Test data set
     """
+    
     path = f'data/{simulation_type}/n_cluster_{n_cluster}/simulation_{simulation_number}'
 
     Path(path).mkdir(parents=True, exist_ok=True)

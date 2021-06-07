@@ -18,8 +18,11 @@ def train_model(train_with_clustering: bool, n_cluster_simulation: int, simulati
         embedded_dim (int):
         simulation_number (int):
         n_cluster_simulation (int):
+    Raises:
+        ValueError: If the batch size is too big for the tran/validation data
     """
 
+    # Set path to save model to
     if train_with_clustering:
         model_path = f'models/{config.SIMULATION_TYPE}/n_cluster_{n_cluster_simulation}/' \
                      f'simulation_{simulation_number}_cluster_trained/sparse_{embedded_dim}'
@@ -52,7 +55,7 @@ def train_model(train_with_clustering: bool, n_cluster_simulation: int, simulati
     model = autoencoder.Autoencoder(input_dim=input_dim, embedded_dim=embedded_dim)
 
     # Train Autoencoder
-    _, history = autoencoder_training.train_model(
+    history = autoencoder_training.train_model(
         model=model, train_dataset=train_data, validation_dataset=validation_data, model_path=model_path,
         train_with_clustering=train_with_clustering, n_cluster=n_cluster_simulation,
     )
@@ -60,6 +63,9 @@ def train_model(train_with_clustering: bool, n_cluster_simulation: int, simulati
     # Save training history
     with open(f'{model_path}/train_history', 'wb') as his:
         pickle.dump(history, his, pickle.HIGHEST_PROTOCOL)
+
+    print()
+    print()
 
 
 if __name__ == '__main__':

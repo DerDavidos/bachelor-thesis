@@ -1,14 +1,12 @@
 import numpy as np
 import torch
-import torch.nn as nn
 from matplotlib import pyplot as plt
 
 from autoencoder import Autoencoder
 
 
 def predict(model: Autoencoder, dataset: np.array) -> np.array:
-    predictions, losses = [], []
-    criterion = nn.L1Loss(reduction='sum')
+    predictions = []
     with torch.no_grad():
         model = model.eval()
         for seq_true in dataset:
@@ -17,18 +15,15 @@ def predict(model: Autoencoder, dataset: np.array) -> np.array:
             seq_true = seq_true
             seq_pred = model(seq_true)
 
-            loss = criterion(seq_pred, seq_true)
-
             predictions.append(seq_pred.cpu().numpy().flatten())
-            losses.append(loss.item())
-    return predictions, losses
+
+    return predictions
 
 
 def test_reconstructions(model: Autoencoder, test_dataset: np.array, max_graphs: int = 15):
-    predictions, pred_losses = predict(model, test_dataset)
+    predictions = predict(model, test_dataset)
 
     print(f'Number of test spikes: {len(test_dataset)}')
-    print(f'Average prediction loss: {sum(pred_losses) / len(pred_losses)}')
 
     for i in range(min(len(test_dataset), max_graphs)):
         plt.plot(test_dataset[i])
@@ -45,7 +40,7 @@ def encode_data(model: Autoencoder, data: np.array, batch_size: int) -> np.array
         data: The data to encode
         batch_size: Batch size of the given data
     Returns:
-         np.narray: The encoded data
+         np.array: The encoded data
     """
 
     if isinstance(data, torch.Tensor):
@@ -71,7 +66,7 @@ def decode_data(model: Autoencoder, data: np.array, batch_size: int) -> np.array
         data: The data to decode
         batch_size: Batch size of the given data
     Returns:
-         np.narray: The decoded data
+         np.array: The decoded data
     """
 
     data = torch.tensor(data).float()

@@ -8,6 +8,6 @@ EARLY_STOPPING_MIN_IMPROVEMENT = 0.01
 SIMULATION_TYPE = 'own_generated'
 SIMULATION_NUMBER = [0]
 EMBEDDED_DIMENSIONS = [8, 12, 16]
-N_CLUSTER_SIMULATION = range(2, 5 + 1)
-CLUSTERING = [True, False]  # With True and False trains with and without clustering in loss
+N_CLUSTER_SIMULATION = range(3, 4 + 1)
+CLUSTERING = [True]  # With True and False trains with and without clustering in loss
 """"""""""""" Trainings Settings """""""""""""""""""

@@ -12,7 +12,7 @@ from configs import simulation as config
 class AutoencoderClusterer:
     """ Combined Autoencoder model to reduce dimension and k-means to cluster the data """
 
-    def __init__(self, model: Autoencoder, n_cluster: int, train_data: np.array):
+    def __init__(self, model: Autoencoder, n_cluster: int, train_data: np.array) -> None:
         """ Initializes k-means with the train data reduced dimensionaly with the given Autoencoder model
 
         Parameters:
@@ -29,7 +29,7 @@ class AutoencoderClusterer:
         encoded_data = autoencoder_functions.encode_data(model=model, data=train_data, batch_size=len(train_data))
         self.kmeans.fit(encoded_data)
 
-    def predict(self, data: np.array):
+    def predict(self, data: np.array) -> np.array:
         """ Predicts cluser labels of data with Autoenocder model and k-means
 
         Parameters:
@@ -73,7 +73,7 @@ def main(evaluate: bool) -> None:
             print(f'{i}: {x}')
         print(f'Average: \033[31m{np.mean(euclidian_per_cluster)}\033[0m')
 
-        print('\nAverage KL_Divergence from spikes to other spikes in same cluster')
+        print('\nAverage KL-Divergence from spikes to other spikes in same cluster')
         for i, x in enumerate(kl_per_cluster):
             print(f'{i}: {x}')
         print(f'Average: \033[31m{np.mean(kl_per_cluster)}\033[0m')

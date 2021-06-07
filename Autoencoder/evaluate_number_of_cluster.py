@@ -1,3 +1,4 @@
+import numpy as np
 from matplotlib import pyplot as plt
 
 import evaluate_functions
@@ -5,37 +6,45 @@ from configs import evaluate as config
 
 
 def evaluate_performance_per_sparsity() -> None:
-    euclidian_seperate_training = []
-    euclidian_combined_training = []
-    euclidian_pca = []
-
-    kl_seperate_training = []
-    kl_combined_training = []
-    kl_pca = []
+    euclidean_separate_training, euclidean_combined_training, euclidean_pca = [], [], []
+    kl_separate_training, kl_combined_training, kl_pca = [], [], []
 
     for cluster in config.CLUSTER:
-        euclidian, kl = evaluate_functions.evaluate_cluster_dimension(cluster=cluster, dimension=8)
 
-        euclidian_seperate_training.append(euclidian[0])
-        euclidian_combined_training.append(euclidian[1])
-        euclidian_pca.append(euclidian[2])
+        euclidean_separate_training_intern, euclidean_combined_training_intern, euclidean_pca_intern = [], [], []
+        kl_separate_training_intern, kl_combined_training_intern, kl_pca_intern = [], [], []
 
-        kl_seperate_training.append(kl[0])
-        kl_combined_training.append(kl[1])
-        kl_pca.append(kl[2])
+        for dimension in config.DIMENSIONS:
+            euclidean, kl = evaluate_functions.evaluate_cluster_dimension(cluster=cluster, dimension=dimension)
 
-    plt.title(f'Euclidian distance')
-    plt.plot(config.CLUSTER, euclidian_seperate_training, label='Seperate Training', linewidth=2)
-    plt.plot(config.CLUSTER, euclidian_combined_training, label='Combined Training', linewidth=2)
-    plt.plot(config.CLUSTER, euclidian_pca, label='PCA', linewidth=2)
+            euclidean_separate_training_intern.append(euclidean[0])
+            euclidean_combined_training_intern.append(euclidean[1])
+            euclidean_pca_intern.append(euclidean[2])
+
+            kl_separate_training_intern.append(kl[0])
+            kl_combined_training_intern.append(kl[1])
+            kl_pca_intern.append(kl[2])
+
+        euclidean_separate_training.append(np.mean(euclidean_separate_training_intern))
+        euclidean_combined_training.append(np.mean(euclidean_combined_training_intern))
+        euclidean_pca.append(np.mean(euclidean_pca_intern))
+
+        kl_separate_training.append(np.mean(kl_separate_training_intern))
+        kl_combined_training.append(np.mean(kl_combined_training_intern))
+        kl_pca.append(np.mean(kl_pca_intern))
+
+    plt.title(f'Euclidean distance')
+    plt.plot(config.CLUSTER, euclidean_separate_training, label='separate Training', marker='o', linewidth=2)
+    plt.plot(config.CLUSTER, euclidean_combined_training, label='Combined Training', marker='o', linewidth=2)
+    plt.plot(config.CLUSTER, euclidean_pca, label='PCA', marker='o', linewidth=2)
     plt.ylim([0, None])
     plt.legend()
     plt.show()
 
-    plt.title(f'KL-Divergenz')
-    plt.plot(config.CLUSTER, kl_seperate_training, label='Seperate Training', linewidth=2)
-    plt.plot(config.CLUSTER, kl_combined_training, label='Combined Training', linewidth=2)
-    plt.plot(config.CLUSTER, kl_pca, label='PCA', linewidth=2)
+    plt.title(f'KL-Divergence')
+    plt.plot(config.CLUSTER, kl_separate_training, label='separate Training', marker='o', linewidth=2)
+    plt.plot(config.CLUSTER, kl_combined_training, label='Combined Training', marker='o', linewidth=2)
+    plt.plot(config.CLUSTER, kl_pca, label='PCA', marker='o', linewidth=2)
     plt.ylim([0, None])
     plt.legend()
     plt.show()

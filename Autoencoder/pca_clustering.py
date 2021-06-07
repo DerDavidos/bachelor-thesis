@@ -10,7 +10,7 @@ from configs import simulation as config
 class PcaClusterer:
     """ Combined PCA to reduce dimension and k-means to cluster the data """
 
-    def __init__(self, n_components: int, n_cluster: int, train_data: np.array):
+    def __init__(self, n_components: int, n_cluster: int, train_data: np.array) -> None:
         """ Fits PCA and k-means on train data
 
         Parameters:
@@ -29,12 +29,12 @@ class PcaClusterer:
         self.kmeans.fit(transformed_train_data)
 
     def predict(self, data: np.array) -> np.array:
-        """ Predicts cluser labels of data with fited pca and k-means
+        """ Predicts cluster labels of data with fitted pca and k-means
 
         Parameters:
             data (np.array): Data to predict cluster
         Returns:
-            np.array: Array of predcited labels
+            np.array: Array of predicted labels
         """
 
         transformed_test_data = self.pca.transform(data)
@@ -57,15 +57,15 @@ def main(evaluate: bool) -> None:
     evaluate_functions.plot_cluster(data=test_data, labels=pca_clusterer.labels, predictions=predictions)
 
     if evaluate:
-        euclidian_per_cluster, kl_per_cluster = \
+        euclidean_per_cluster, kl_per_cluster = \
             evaluate_functions.evaluate_clustering(data=test_data, labels=pca_clusterer.labels, predictions=predictions)
 
-        print('\nAverage Euclidian distance from spikes to other spikes in same cluster')
-        for i, x in enumerate(euclidian_per_cluster):
+        print('\nAverage Euclidean distance from spikes to other spikes in same cluster')
+        for i, x in enumerate(euclidean_per_cluster):
             print(f'{i}: {x}')
-        print(f'Average: \033[31m{np.mean(euclidian_per_cluster)}\033[0m')
+        print(f'Average: \033[31m{np.mean(euclidean_per_cluster)}\033[0m')
 
-        print('\nAverage KL_Divergence from spikes to other spikes in same cluster')
+        print('\nAverage KL-Divergence from spikes to other spikes in same cluster')
         for i, x in enumerate(kl_per_cluster):
             print(f'{i}: {x}')
         print(f'Average: \033[31m{np.mean(kl_per_cluster)}\033[0m')

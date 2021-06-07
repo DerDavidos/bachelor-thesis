@@ -1,9 +1,9 @@
 """"""""""""" Simulation Settings """""""""""""""""""
 # SIMULATION_TYPE: pedreira, martinez, own_generated
 SIMULATION_TYPE = 'own_generated'
-N_CLUSTER = 4
+N_CLUSTER = 3
 SIMULATION_NUMBER = 0
-EMBEDDED_DIMENSION = 8
+EMBEDDED_DIMENSION = 12
 TRAINED_WITH_CLUSTERING = True
 EVALUATE = False
 """"""""""""" Simulation Settings """""""""""""""""""

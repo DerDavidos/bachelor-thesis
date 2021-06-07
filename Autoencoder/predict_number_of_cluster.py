@@ -7,14 +7,14 @@ from configs import evaluate as config
 
 
 def determinate_number_of_cluster(data) -> int:
-    """ Predictes number of different spikes (cluster) in spike data
+    """ Predicts number of different spikes (cluster) in spike data
 
     Returns:
         int: Number of predicted cluster
     """
 
     wcss = []
-    max_cluster = 6
+    max_cluster = 8
     for i in range(2, max_cluster + 1):
         pca = PCA(n_components=8)
         kmeans = KMeans(n_clusters=i)
@@ -24,7 +24,7 @@ def determinate_number_of_cluster(data) -> int:
         kmeans.fit(transformed_train_data)
         predictions = kmeans.predict(transformed_train_data)
 
-        euclidian_per_cluster, kl_per_cluster = \
+        _, kl_per_cluster = \
             evaluate_functions.evaluate_clustering(data=data, labels=list(set(kmeans.labels_)), predictions=predictions)
 
         wcss.append(np.mean(kl_per_cluster))

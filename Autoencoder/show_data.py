@@ -1,13 +1,16 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from configs import config
+from configs import simulation as config
 
 
 def show_all_spikes() -> None:
     """ Plots all spikes from the simulation defined in config.py """
 
-    with open(config.SPIKE_PATH, 'rb') as file:
+    spike_path = f'spikes/{config.SIMULATION_TYPE}/n_cluster_{config.N_CLUSTER}/' \
+                 f'simulation_{config.SIMULATION_NUMBER}.npy'
+
+    with open(spike_path, 'rb') as file:
         aligned_spikes = np.load(file)
 
     print(aligned_spikes.shape)
@@ -15,7 +18,7 @@ def show_all_spikes() -> None:
     min_in_test_data = np.min(aligned_spikes)
     max_in_test_data = np.max(aligned_spikes)
 
-    plt.title(f'{config.SPIKE_PATH}')
+    plt.title(f'{spike_path}')
     plt.ylim(np.amin(aligned_spikes), np.amax(aligned_spikes))
 
     for x in aligned_spikes:
