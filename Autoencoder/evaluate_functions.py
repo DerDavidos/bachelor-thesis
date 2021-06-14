@@ -109,20 +109,24 @@ def evaluate_cluster_dimension(cluster: int, dimension: int) -> [list, list]:
     print(f'Evaluating: Cluster: {cluster}, Dimension: {dimension}')
 
     # Load train and test data
-    data_path = f'data/{config.SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.SIMULATION_NUMBER}'
+    data_path = f'data/own_generated/n_cluster_{cluster}/simulation_{config.OWN_SIMULATION_NUMBER}'
     train_data, _, test_data = data_loader.load_train_val_test_data(data_path)
 
+    if config.SIMULATION_TYPE != 'own_generated':
+        data_path = f'data/{config.SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}'
+        test_data, _, _ = data_loader.load_train_val_test_data(data_path)
+
     # Autoencoder with seperate training
-    model = torch.load(f'models/{config.SIMULATION_TYPE}/n_cluster_{cluster}/'
-                       f'simulation_{config.SIMULATION_NUMBER}_not_cluster_trained/sparse_{dimension}/model.pth')
+    model = torch.load(f'models/own_generated/n_cluster_{cluster}/'
+                       f'simulation_{config.OWN_SIMULATION_NUMBER}_not_cluster_trained/sparse_{dimension}/model.pth')
     clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
     predictions = clusterer.predict(test_data)
     euclidean_per_cluster_0, kl_per_cluster_0 = \
         evaluate_clustering(data=test_data, labels=clusterer.labels, predictions=predictions)
 
     # Autoencoder with combined training
-    model = torch.load(f'models/{config.SIMULATION_TYPE}/n_cluster_{cluster}/'
-                       f'simulation_{config.SIMULATION_NUMBER}_cluster_trained/sparse_{dimension}/model.pth')
+    model = torch.load(f'models/own_generated/n_cluster_{cluster}/'
+                       f'simulation_{config.OWN_SIMULATION_NUMBER}_cluster_trained/sparse_{dimension}/model.pth')
     clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
     predictions = clusterer.predict(test_data)
     euclidean_per_cluster_1, kl_per_cluster_1 = \
@@ -151,8 +155,12 @@ def clustering_without_reduction() -> [float, float]:
         print(f'Evaluating: Cluster: {cluster}')
 
         # Load train and test data
-        data_path = f'data/{config.SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.SIMULATION_NUMBER}'
+        data_path = f'data/own_generated/n_cluster_{cluster}/simulation_{config.OWN_SIMULATION_NUMBER}'
         train_data, _, test_data = data_loader.load_train_val_test_data(data_path)
+
+        if config.SIMULATION_TYPE != 'own_generated':
+            data_path = f'data/{config.SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}'
+            test_data, _, _ = data_loader.load_train_val_test_data(data_path)
 
         labels = [x for x in range(cluster)]
 

@@ -33,7 +33,7 @@ def evaluate_performance_per_sparsity() -> None:
         kl_combined_training.append(np.mean(kl_combined_training_intern))
         kl_pca.append(np.mean(kl_pca_intern))
 
-    plt.title(f'{config.DIMENSIONS} Spike Types'.replace('[', '').replace(']', ''))
+    plt.title(f'Reduced Dimension size: {config.DIMENSIONS}'.replace('[', '').replace(']', ''))
     plt.scatter(config.CLUSTER, euclidean_pca, label='PCA', marker='s', linewidth=2, color='cyan')
     plt.scatter(config.CLUSTER, euclidean_separate_training, label='Autoencoder Separate Training', color='orange',
                 marker='^', linewidth=1)
@@ -44,11 +44,13 @@ def evaluate_performance_per_sparsity() -> None:
     plt.ylim([0, None])
     plt.ylabel('Euclidian Distance')
     plt.xlabel('Number of Cluster (different Spike types)')
-    plt.savefig(f'images/per_cluster/euclidian_{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ', ''),
-                bbox_inches='tight')
+    plt.savefig(
+        f'images/per_cluster/euclidian_{config.SIMULATION_TYPE}{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ',
+                                                                                                                ''),
+        bbox_inches='tight')
     plt.clf()
 
-    plt.title(f'{config.DIMENSIONS} Spike Types'.replace('[', '').replace(']', ''))
+    plt.title(f'Reduced Dimension size: {config.DIMENSIONS}'.replace('[', '').replace(']', ''))
     plt.scatter(config.CLUSTER, kl_pca, label='PCA', marker='s', linewidth=2, color='cyan')
     plt.scatter(config.CLUSTER, kl_separate_training, label='Autoencoder Separate Training', color='orange',
                 marker='^', linewidth=1)
@@ -58,8 +60,9 @@ def evaluate_performance_per_sparsity() -> None:
     plt.ylim([0, None])
     plt.ylabel('KL-Divergence')
     plt.xlabel('Number of Cluster (different Spike types)')
-    plt.savefig(f'images/per_cluster/kl_{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ', ''),
-                bbox_inches='tight')
+    plt.savefig(
+        f'images/per_cluster/kl_{config.SIMULATION_TYPE}{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ', ''),
+        bbox_inches='tight')
     plt.clf()
 
 

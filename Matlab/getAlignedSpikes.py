@@ -7,11 +7,10 @@ from pathlib import Path
 import os
 
 """"""""""""""""""""""""""""""""
-# pedreira, martinez, own_generated
+# martinez, own_generated
 SIMULATION_TYPES = [
-    # 'pedreira',
-    # 'martinez',
-    'own_generated'
+    'martinez',
+    # 'own_generated'
 ]
 """"""""""""""""""""""""""""""""
 
@@ -23,23 +22,6 @@ def get_data_from_matlab(simulation_type: str):
         simulation_type: Which simulation type to load spikes from
     """
     print(simulation_type)
-    if simulation_type == 'pedreira':
-        for simulation in chain(range(0, 9), range(89, 95)):
-            eng = matlab.engine.start_matlab()
-            # adding one for Matlab counting
-            spikes, _ = eng.sendDataToPython(2, simulation + 1, nargout=2)
-
-            spikes = np.array(spikes)
-
-            path = f'{pathlib.Path(__file__).parent.absolute()}/../Autoencoder/spikes/pedreira/simulation_{simulation}'
-
-            Path(path).mkdir(parents=True, exist_ok=True)
-
-            np.save(f'{path}/spikes', spikes)
-
-            print(spikes.shape)
-            print(f'Saved {simulation}')
-            eng.close()
 
     if simulation_type == 'martinez':
         for simulation in range(5):
@@ -50,11 +32,11 @@ def get_data_from_matlab(simulation_type: str):
 
             spikes = np.array(spikes)
 
-            path = f'{pathlib.Path(__file__).parent.absolute()}/../Autoencoder/spikes/pedreira/simulation_{simulation}'
+            path = f'{pathlib.Path(__file__).parent.absolute()}/../Autoencoder/spikes/martinez/n_cluster_3'
 
             Path(path).mkdir(parents=True, exist_ok=True)
 
-            np.save(f'{path}/spikes', spikes)
+            np.save(f'{path}/simulation_{simulation}', spikes)
 
             print(spikes.shape)
             print(f'Saved {simulation}')
@@ -84,7 +66,7 @@ def get_data_from_matlab(simulation_type: str):
 
         np.save(f'{path}/simulation_{sim_number}', np.array(spikes))
 
-        print(f'Saved')
+        print(f'Saved, {path}/simulation_{sim_number}')
 
 
 if __name__ == '__main__':

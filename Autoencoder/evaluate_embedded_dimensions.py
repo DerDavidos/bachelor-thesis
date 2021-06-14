@@ -49,8 +49,10 @@ def evaluate_performance_per_sparsity() -> None:
     plt.ylim([0, None])
     plt.ylabel('Euclidian Distance')
     plt.xlabel('Reduced Dimension size')
-    plt.savefig(f'images/per_dimension/euclidian_{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ', ''),
-                bbox_inches='tight')
+    plt.savefig(
+        f'images/per_dimension/euclidian_{config.SIMULATION_TYPE}{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ',
+                                                                                                                  ''),
+        bbox_inches='tight')
     plt.clf()
 
     plt.title(f'{config.CLUSTER} Spike Types'.replace('[', '').replace(']', ''))
@@ -66,8 +68,9 @@ def evaluate_performance_per_sparsity() -> None:
     plt.ylim([0, None])
     plt.ylabel('KL-Divergence')
     plt.xlabel('Reduced Dimension size')
-    plt.savefig(f'images/per_dimension/kl_{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ', ''),
-                bbox_inches='tight')
+    plt.savefig(
+        f'images/per_dimension/kl_{config.SIMULATION_TYPE}{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ', ''),
+        bbox_inches='tight')
 
     print('Seperate', kl_separate_training)
     print('Combined', kl_combined_training)
