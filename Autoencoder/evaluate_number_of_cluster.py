@@ -33,21 +33,34 @@ def evaluate_performance_per_sparsity() -> None:
         kl_combined_training.append(np.mean(kl_combined_training_intern))
         kl_pca.append(np.mean(kl_pca_intern))
 
-    plt.title(f'Euclidean distance')
-    plt.plot(config.CLUSTER, euclidean_separate_training, label='separate Training', marker='o', linewidth=2)
-    plt.plot(config.CLUSTER, euclidean_combined_training, label='Combined Training', marker='o', linewidth=2)
-    plt.plot(config.CLUSTER, euclidean_pca, label='PCA', marker='o', linewidth=2)
-    plt.ylim([0, None])
-    plt.legend()
-    plt.show()
+    plt.title(f'{config.DIMENSIONS} Spike Types'.replace('[', '').replace(']', ''))
+    plt.scatter(config.CLUSTER, euclidean_pca, label='PCA', marker='s', linewidth=2, color='cyan')
+    plt.scatter(config.CLUSTER, euclidean_separate_training, label='Autoencoder Separate Training', color='orange',
+                marker='^', linewidth=1)
+    plt.scatter(config.CLUSTER, euclidean_combined_training, label='Autoencoder Combined Training',
+                marker='x', color='green', linewidth=2)
 
-    plt.title(f'KL-Divergence')
-    plt.plot(config.CLUSTER, kl_separate_training, label='separate Training', marker='o', linewidth=2)
-    plt.plot(config.CLUSTER, kl_combined_training, label='Combined Training', marker='o', linewidth=2)
-    plt.plot(config.CLUSTER, kl_pca, label='PCA', marker='o', linewidth=2)
-    plt.ylim([0, None])
     plt.legend()
-    plt.show()
+    plt.ylim([0, None])
+    plt.ylabel('Euclidian Distance')
+    plt.xlabel('Number of Cluster (different Spike types)')
+    plt.savefig(f'images/per_cluster/euclidian_{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ', ''),
+                bbox_inches='tight')
+    plt.clf()
+
+    plt.title(f'{config.DIMENSIONS} Spike Types'.replace('[', '').replace(']', ''))
+    plt.scatter(config.CLUSTER, kl_pca, label='PCA', marker='s', linewidth=2, color='cyan')
+    plt.scatter(config.CLUSTER, kl_separate_training, label='Autoencoder Separate Training', color='orange',
+                marker='^', linewidth=1)
+    plt.scatter(config.CLUSTER, kl_combined_training, label='Autoencoder Combined Training', color='green',
+                marker='x', linewidth=2)
+    plt.legend()
+    plt.ylim([0, None])
+    plt.ylabel('KL-Divergence')
+    plt.xlabel('Number of Cluster (different Spike types)')
+    plt.savefig(f'images/per_cluster/kl_{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ', ''),
+                bbox_inches='tight')
+    plt.clf()
 
 
 if __name__ == '__main__':

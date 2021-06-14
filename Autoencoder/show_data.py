@@ -23,7 +23,10 @@ def show_all_spikes() -> None:
 
     for x in aligned_spikes:
         plt.plot(x)
+    plt.plot(np.mean(aligned_spikes, axis=0), color='yellow')
+    plt.show()
 
+    plt.plot(np.mean(aligned_spikes, axis=0), color='black')
     plt.show()
 
     for i in range(5):

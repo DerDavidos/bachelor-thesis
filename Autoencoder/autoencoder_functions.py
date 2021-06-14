@@ -12,7 +12,7 @@ def predict(model: Autoencoder, dataset: np.array) -> np.array:
         for seq_true in dataset:
             if len(seq_true.shape) == 2:
                 seq_true = seq_true.reshape(1, -1, 1)
-            seq_true = seq_true
+            seq_true = torch.tensor(seq_true).float()
             seq_pred = model(seq_true)
 
             predictions.append(seq_pred.cpu().numpy().flatten())
@@ -20,7 +20,7 @@ def predict(model: Autoencoder, dataset: np.array) -> np.array:
     return predictions
 
 
-def test_reconstructions(model: Autoencoder, test_dataset: np.array, max_graphs: int = 15):
+def test_reconstructions(model: Autoencoder, test_dataset: np.array, max_graphs: int = 5):
     predictions = predict(model, test_dataset)
 
     print(f'Number of test spikes: {len(test_dataset)}')
@@ -93,6 +93,6 @@ def plot_history(history: dict) -> None:
     ax.plot(history['val'])
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
-    plt.legend(['train', 'test'])
+    plt.legend(['train', 'validation'])
     plt.title('Loss over training epochs')
     plt.show()

@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from scipy.stats import entropy
+from sklearn.cluster import KMeans
 
 import autoencoder_clustering
 import data_loader
@@ -104,13 +105,14 @@ def evaluate_cluster_dimension(cluster: int, dimension: int) -> [list, list]:
     Returns:
         [list, list]: The three euclidean distances and three KL-Divergences as floats
     """
-    
+
     print(f'Evaluating: Cluster: {cluster}, Dimension: {dimension}')
 
-    data_path = f'data/{config.SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.SIMULATION_NUMBER}'
     # Load train and test data
+    data_path = f'data/{config.SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.SIMULATION_NUMBER}'
     train_data, _, test_data = data_loader.load_train_val_test_data(data_path)
 
+    # Autoencoder with seperate training
     model = torch.load(f'models/{config.SIMULATION_TYPE}/n_cluster_{cluster}/'
                        f'simulation_{config.SIMULATION_NUMBER}_not_cluster_trained/sparse_{dimension}/model.pth')
     clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
@@ -118,6 +120,7 @@ def evaluate_cluster_dimension(cluster: int, dimension: int) -> [list, list]:
     euclidean_per_cluster_0, kl_per_cluster_0 = \
         evaluate_clustering(data=test_data, labels=clusterer.labels, predictions=predictions)
 
+    # Autoencoder with combined training
     model = torch.load(f'models/{config.SIMULATION_TYPE}/n_cluster_{cluster}/'
                        f'simulation_{config.SIMULATION_NUMBER}_cluster_trained/sparse_{dimension}/model.pth')
     clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
@@ -125,6 +128,7 @@ def evaluate_cluster_dimension(cluster: int, dimension: int) -> [list, list]:
     euclidean_per_cluster_1, kl_per_cluster_1 = \
         evaluate_clustering(data=test_data, labels=clusterer.labels, predictions=predictions)
 
+    # PCA
     pca_clusterer = pca_clustering.PcaClusterer(n_components=dimension, n_cluster=cluster, train_data=train_data)
     predictions = pca_clusterer.predict(test_data)
     euclidean_per_cluster_2, kl_per_cluster_2 = \
@@ -132,3 +136,36 @@ def evaluate_cluster_dimension(cluster: int, dimension: int) -> [list, list]:
 
     return [np.mean(euclidean_per_cluster_0), np.mean(euclidean_per_cluster_1), np.mean(euclidean_per_cluster_2)], \
            [np.mean(kl_per_cluster_0), np.mean(kl_per_cluster_1), np.mean(kl_per_cluster_2)]
+
+
+def clustering_without_reduction() -> [float, float]:
+    """ Performs k-means clustering wihtout reducing data before
+
+    Returns:
+        [float, float]: Euclidan Distance, KL-Divergence
+    """
+    euclidean = []
+    kl = []
+
+    for cluster in config.CLUSTER:
+        print(f'Evaluating: Cluster: {cluster}')
+
+        # Load train and test data
+        data_path = f'data/{config.SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.SIMULATION_NUMBER}'
+        train_data, _, test_data = data_loader.load_train_val_test_data(data_path)
+
+        labels = [x for x in range(cluster)]
+
+        kmeans = KMeans(n_clusters=cluster)
+
+        kmeans.fit(train_data)
+
+        predictions = kmeans.predict(test_data)
+
+        euclidean_per_cluster, kl_per_cluster = evaluate_clustering(data=test_data, labels=labels,
+                                                                    predictions=predictions)
+
+        euclidean.append(np.mean(euclidean_per_cluster))
+        kl.append(np.mean(kl_per_cluster))
+
+    return np.mean(euclidean), np.mean(kl)

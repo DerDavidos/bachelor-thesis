@@ -68,15 +68,15 @@ class ClusteringLoss:
         return loss
 
 
-def train_epoch(model: Autoencoder, optimizer: torch.optim, criterion: Union[nn, ClusteringLoss], train_dataset: list,
-                validation_dataset: list, update_percentage: int, train_with_clustering: bool = False) -> [float,
-                                                                                                           float]:
+def train_epoch(model: Autoencoder, optimizer: torch.optim, criterion: Union[nn.MSELoss, ClusteringLoss],
+                train_dataset: list, validation_dataset: list, update_percentage: int,
+                train_with_clustering: bool = False) -> [float, float]:
     """ Trains Autoencoder on one epoch
     
     Parameters:
         model (Autoencoder): The model to train
         optimizer (optim): The optimizer
-        criterion (Union[nn, ClusteringLoss]): Calculate the loss with
+        criterion (Union[nn.MSELoss, ClusteringLoss]): Calculate the loss with
         train_dataset (list): Data to train the epoch on
         validation_dataset (list): Data to validate the epoch on
         update_percentage (int): For which value for each multiply the percentage displayed is updated

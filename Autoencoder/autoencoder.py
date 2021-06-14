@@ -9,11 +9,12 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
 
         hidden_dim = int(input_dim / 2)
+        between_lstm_dim = int((hidden_dim + embedded_dim) / 4)
 
-        self.convolution_1d_1 = nn.Conv1d(1, 5, kernel_size=9, padding=4, padding_mode="replicate")
+        self.convolution_1d_1 = nn.Conv1d(1, 4, kernel_size=9, padding=4, padding_mode="replicate")
         self.leaky_re_lu_1 = nn.LeakyReLU()
 
-        self.convolution_1d_2 = nn.Conv1d(5, 5, kernel_size=5, padding=2, padding_mode="replicate")
+        self.convolution_1d_2 = nn.Conv1d(4, 8, kernel_size=5, padding=2, padding_mode="replicate")
         self.leaky_re_lu_2 = nn.LeakyReLU()
 
         self.max_pooling = nn.MaxPool1d(2)
@@ -21,7 +22,7 @@ class Encoder(nn.Module):
         # First LSTM
         self.lstm_1 = nn.LSTM(
             input_size=hidden_dim,
-            hidden_size=int(hidden_dim / 2),
+            hidden_size=int(between_lstm_dim),
             num_layers=1,
             batch_first=True,
             bidirectional=True,
@@ -29,7 +30,7 @@ class Encoder(nn.Module):
 
         # Second LSTM
         self.lstm_2 = nn.LSTM(
-            input_size=hidden_dim,
+            input_size=int(between_lstm_dim * 2),
             hidden_size=int(embedded_dim / 2),
             num_layers=1,
             batch_first=True,
@@ -37,7 +38,7 @@ class Encoder(nn.Module):
         )
 
     def forward(self, x: torch.Tensor, batch_size: int):
-        """ Propages the data in Tensor x through the Encoder
+        """ Propagates the data in Tensor x through the Encoder
 
         Parameters:
             x (torch.Tensor): Data
@@ -79,14 +80,14 @@ class Decoder(nn.Module):
 
         self.up_sample = nn.Upsample(output_dim)
 
-        self.transpose_convolution_1d_2 = nn.ConvTranspose1d(1, 8, kernel_size=8, padding=3)
+        self.transpose_convolution_1d_2 = nn.ConvTranspose1d(1, 4, kernel_size=5, padding=2)
 
-        self.transpose_convolution_1d_1 = nn.ConvTranspose1d(8, 5, kernel_size=16, padding=8)
+        self.transpose_convolution_1d_1 = nn.ConvTranspose1d(4, 8, kernel_size=9, padding=4)
 
-        self.transpose_convolution_1d_resize = nn.ConvTranspose1d(5, 1, kernel_size=1)
+        self.transpose_convolution_1d_resize = nn.ConvTranspose1d(8, 1, kernel_size=1)
 
     def forward(self, x: torch.Tensor, batch_size: int) -> torch.Tensor:
-        """ Propages the data in Tensor x through the Decoder
+        """ Propagates the data in Tensor x through the Decoder
 
         Parameters:
             x (torch.Tensor): Data
@@ -123,7 +124,7 @@ class Autoencoder(nn.Module):
         self.__decoder = Decoder(output_dim=input_dim)
 
     def forward(self, x: torch.Tensor):
-        """ Propages the data in Tensor x through the Autoencoder
+        """ Propagates the data in Tensor x through the Autoencoder
 
         Parameters:
             x (torch.Tensor): Data
@@ -132,28 +133,48 @@ class Autoencoder(nn.Module):
         """
 
         if len(x.shape) != 3:
-            raise SyntaxError('Wrong input dimension')
+            try:
+                x = x.reshape(1, -1, 1)
+            except:
+                raise ValueError("Wrong input into Autoencoder.")
 
         batch_size = x.shape[0]
+
         x = self.__encoder(x, batch_size)
         x = self.__decoder(x, batch_size)
 
         return x
 
-    def encode_data(self, x):
-        if len(x.shape) == 2:
-            x = x.reshape(1, -1, 1)
-        batch_size = x.shape[0]
-        x = x.reshape(batch_size, -1, 1)
-        x = self.__encoder(x, batch_size)
+    def encode_data(self, data: torch.Tensor) -> torch.Tensor:
+        """ Encodes data using the Encoder component
 
-        return x
+        Parameters:
+            data (torch.Tensor): Data to encode
+        Returns:
+            torch.Tensor: Encoded data
+        """
 
-    def decode_data(self, x):
-        if len(x.shape) == 2:
-            x = x.reshape(1, -1, 1)
-        batch_size = x.shape[0]
-        x = x.reshape(batch_size, -1, 1)
-        x = self.__decoder(x, batch_size)
+        if len(data.shape) == 2:
+            data = data.reshape(1, -1, 1)
+        batch_size = data.shape[0]
+        data = data.reshape(batch_size, -1, 1)
+        data = self.__encoder(data, batch_size)
 
-        return x
+        return data
+
+    def decode_data(self, data: torch.Tensor) -> torch.Tensor:
+        """ Decodes data in encoded format using the Decoder component
+
+        Parameters:
+            data (torch.Tensor): Encoded data to decode
+        Returns:
+            torch.Tensor: Decoded data
+        """
+
+        if len(data.shape) == 2:
+            data = data.reshape(1, -1, 1)
+        batch_size = data.shape[0]
+        data = data.reshape(batch_size, -1, 1)
+        data = self.__decoder(data, batch_size)
+
+        return data
