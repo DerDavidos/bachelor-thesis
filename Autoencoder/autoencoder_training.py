@@ -60,7 +60,7 @@ class ClusteringLoss:
             else:
                 kl_per_cluster.append(0)
 
-        cluster_loss = np.mean(kl_per_cluster) * 50
+        cluster_loss = np.mean(kl_per_cluster) * 35
 
         # Combine losses
         loss = reconstruction_loss + cluster_loss

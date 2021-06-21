@@ -1,4 +1,5 @@
 import numpy as np
+from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
@@ -30,8 +31,9 @@ def determinate_number_of_cluster(data) -> int:
         wcss.append(np.mean(kl_per_cluster))
     predicted_number_of_cluster = 2
     print(wcss)
-    while predicted_number_of_cluster + 2 < max_cluster \
-            and wcss[predicted_number_of_cluster] < wcss[predicted_number_of_cluster + 1] * 1.25:
+
+    while predicted_number_of_cluster < max_cluster - 2 and \
+            wcss[predicted_number_of_cluster] < wcss[predicted_number_of_cluster + 1] * 1.25:
         predicted_number_of_cluster += 1
 
     return predicted_number_of_cluster
@@ -40,11 +42,26 @@ def determinate_number_of_cluster(data) -> int:
 def plot_predicted_and_real_number_of_cluster() -> None:
     """ For each number of cluster the number of cluster is predicted and plot together with the real number """
 
+    plot_cluster = []
+    max_data_size_to_check = 500
+
     for cluster in config.CLUSTER:
-        with open(f'../data/{config.SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.SIMULATION_NUMBER}/'
-                  f'test_data.npy', 'rb') as file:
+        with open(
+                f'data/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TRAIN_SIMULATION_NUMBER}/'
+                f'test_data.npy', 'rb') as file:
             data = np.load(file, allow_pickle=True)
-        print(cluster, determinate_number_of_cluster(data=data))
+            if len(data) > max_data_size_to_check:
+                data = data[:max_data_size_to_check]
+        plot_cluster.append(determinate_number_of_cluster(data=data))
+
+    # plt.scatter(config.CLUSTER, config.CLUSTER)
+    plt.scatter(config.CLUSTER, plot_cluster)
+    plt.ylim([1.5, None])
+    plt.xlim([1.5, None])
+    plt.plot([0, 10], [0, 10])
+    plt.ylabel('Predicted Number of Cluster')
+    plt.xlabel('Real Number of CLuster')
+    plt.show()
 
 
 if __name__ == '__main__':

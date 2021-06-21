@@ -109,31 +109,36 @@ def evaluate_cluster_dimension(cluster: int, dimension: int) -> [list, list]:
     print(f'Evaluating: Cluster: {cluster}, Dimension: {dimension}')
 
     # Load train and test data
-    data_path = f'data/own_generated/n_cluster_{cluster}/simulation_{config.OWN_SIMULATION_NUMBER}'
+    data_path = f'data/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TRAIN_SIMULATION_NUMBER}'
     train_data, _, test_data = data_loader.load_train_val_test_data(data_path)
-
-    if config.SIMULATION_TYPE != 'own_generated':
-        data_path = f'data/{config.SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}'
-        test_data, _, _ = data_loader.load_train_val_test_data(data_path)
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+        data_path = f'data/{config.TEST_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}'
+        fit_data, _, test_data = data_loader.load_train_val_test_data(data_path)
 
     # Autoencoder with seperate training
-    model = torch.load(f'models/own_generated/n_cluster_{cluster}/'
-                       f'simulation_{config.OWN_SIMULATION_NUMBER}_not_cluster_trained/sparse_{dimension}/model.pth')
+    model = torch.load(f'models/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/'
+                       f'simulation_{config.TRAIN_SIMULATION_NUMBER}_not_cluster_trained/sparse_{dimension}/model.pth')
     clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+        clusterer.fit_kmeans(fit_data)
     predictions = clusterer.predict(test_data)
     euclidean_per_cluster_0, kl_per_cluster_0 = \
         evaluate_clustering(data=test_data, labels=clusterer.labels, predictions=predictions)
 
     # Autoencoder with combined training
-    model = torch.load(f'models/own_generated/n_cluster_{cluster}/'
-                       f'simulation_{config.OWN_SIMULATION_NUMBER}_cluster_trained/sparse_{dimension}/model.pth')
+    model = torch.load(f'models/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/'
+                       f'simulation_{config.TRAIN_SIMULATION_NUMBER}_cluster_trained/sparse_{dimension}/model.pth')
     clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+        clusterer.fit_kmeans(fit_data)
     predictions = clusterer.predict(test_data)
     euclidean_per_cluster_1, kl_per_cluster_1 = \
         evaluate_clustering(data=test_data, labels=clusterer.labels, predictions=predictions)
 
     # PCA
     pca_clusterer = pca_clustering.PcaClusterer(n_components=dimension, n_cluster=cluster, train_data=train_data)
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+        pca_clusterer.fit_kmeans(fit_data)
     predictions = pca_clusterer.predict(test_data)
     euclidean_per_cluster_2, kl_per_cluster_2 = \
         evaluate_clustering(data=test_data, labels=pca_clusterer.labels, predictions=predictions)
@@ -155,12 +160,12 @@ def clustering_without_reduction() -> [float, float]:
         print(f'Evaluating: Cluster: {cluster}')
 
         # Load train and test data
-        data_path = f'data/own_generated/n_cluster_{cluster}/simulation_{config.OWN_SIMULATION_NUMBER}'
-        train_data, _, test_data = data_loader.load_train_val_test_data(data_path)
-
-        if config.SIMULATION_TYPE != 'own_generated':
-            data_path = f'data/{config.SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}'
-            test_data, _, _ = data_loader.load_train_val_test_data(data_path)
+        if config.TEST_SIMULATION_TYPE == config.TRAIN_SIMULATION_TYPE:
+            data_path = f'data/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TRAIN_SIMULATION_NUMBER}'
+            train_data, _, test_data = data_loader.load_train_val_test_data(data_path)
+        else:
+            data_path = f'data/{config.TEST_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}'
+            train_data, _, test_data = data_loader.load_train_val_test_data(data_path)
 
         labels = [x for x in range(cluster)]
 
@@ -177,3 +182,54 @@ def clustering_without_reduction() -> [float, float]:
         kl.append(np.mean(kl_per_cluster))
 
     return np.mean(euclidean), np.mean(kl)
+
+
+def __evaluate_accuracy(predictions, labels):
+    pass
+
+
+def evaluate_accuracy(cluster, dimension):
+    print(f'Evaluating: Cluster: {cluster}, Dimension: {dimension}')
+
+    # Load train and test data
+    data_path = f'data/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TRAIN_SIMULATION_NUMBER}'
+    train_data, val_data, test_data = data_loader.load_train_val_test_data(data_path)
+
+    label_path = f'spikes/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TRAIN_SIMULATION_NUMBER}'
+    with open(label_path, 'rb') as file:
+        labels = np.load(file, allow_pickle=True)[len(train_data) + len(val_data)]
+
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+        data_path = f'data/{config.TEST_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}'
+        fit_data, val_data, test_data = data_loader.load_train_val_test_data(data_path)
+
+        label_path = f'spikes/{config.TEST_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}'
+        with open(label_path, 'rb') as file:
+            labels = np.load(file, allow_pickle=True)[len(fit_data) + len(val_data)]
+
+    # Autoencoder with seperate training
+    model = torch.load(f'models/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/'
+                       f'simulation_{config.TRAIN_SIMULATION_NUMBER}_not_cluster_trained/sparse_{dimension}/model.pth')
+    clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+        clusterer.fit_kmeans(fit_data)
+    predictions = clusterer.predict(test_data)
+    accuracy_seperate = __evaluate_accuracy(predictions=predictions, labels=labels)
+
+    # Autoencoder with combined training
+    model = torch.load(f'models/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/'
+                       f'simulation_{config.TRAIN_SIMULATION_NUMBER}_cluster_trained/sparse_{dimension}/model.pth')
+    clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+        clusterer.fit_kmeans(fit_data)
+    predictions = clusterer.predict(test_data)
+    accuracy_combined = __evaluate_accuracy(predictions=predictions, labels=labels)
+
+    # PCA
+    pca_clusterer = pca_clustering.PcaClusterer(n_components=dimension, n_cluster=cluster, train_data=train_data)
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+        pca_clusterer.fit_kmeans(fit_data)
+    predictions = pca_clusterer.predict(test_data)
+    accuracy_pca = __evaluate_accuracy(predictions=predictions, labels=labels)
+
+    return accuracy_seperate, accuracy_combined, accuracy_pca

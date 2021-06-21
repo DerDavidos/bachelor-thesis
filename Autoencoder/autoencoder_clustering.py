@@ -37,9 +37,14 @@ class AutoencoderClusterer:
         Returns:
             np.array: Array of predcited labels
         """
+
         encoded_data = autoencoder_functions.encode_data(model=self.model, data=data, batch_size=len(data))
         predictions = self.kmeans.predict(encoded_data)
         return predictions
+
+    def fit_kmeans(self, data: np.array) -> None:
+        encoded_data = autoencoder_functions.encode_data(model=self.model, data=data, batch_size=len(data))
+        self.kmeans.fit(encoded_data)
 
 
 def main(evaluate: bool) -> None:

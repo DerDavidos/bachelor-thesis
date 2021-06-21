@@ -89,15 +89,15 @@ def generate_all_train_val_test_data_sets(validation_percentage: float, test_per
         for type_directory in os.listdir(f'spikes/{spike_directory}'):
             n_cluster = str(type_directory).split('_')[-1]
             directory = f'spikes/{spike_directory}/{type_directory}'
-            for simulation_file in os.listdir(directory):
-                simulation_number = str(simulation_file).split('_')[-1].split('.')[0]
+            for simulation_dir in os.listdir(directory):
+                simulation_number = str(simulation_dir).split('_')[-1].split('.')[0]
                 Path(f'data/{spike_directory}/{type_directory}/simulation_{simulation_number}').mkdir(parents=True,
                                                                                                       exist_ok=True)
                 if override or \
                         len(os.listdir(f'data/{spike_directory}/{type_directory}/simulation_{simulation_number}')) == 0:
 
                     # Load aligned spikes
-                    with open(f'{directory}/{simulation_file}', 'rb') as file:
+                    with open(f'{directory}/{simulation_dir}/spikes.npy', 'rb') as file:
                         aligned_spikes = np.load(file)
 
                     i = 0
@@ -107,7 +107,7 @@ def generate_all_train_val_test_data_sets(validation_percentage: float, test_per
                         else:
                             i += 1
 
-                    print(f'{spike_directory}/{type_directory}/{simulation_file}')
+                    print(f'{spike_directory}/{type_directory}/{simulation_dir}')
                     print(f'Data size: {len(aligned_spikes)}, Sequence length: {len(aligned_spikes[0])}')
 
                     validation_data = []
@@ -115,11 +115,11 @@ def generate_all_train_val_test_data_sets(validation_percentage: float, test_per
                     # Split data into train, validation
                     if validation_percentage != 0:
                         train_data, validation_data = train_test_split(
-                            aligned_spikes, test_size=(validation_percentage + test_percentage))
+                            aligned_spikes, test_size=(validation_percentage + test_percentage), shuffle=False)
                         if test_percentage != 0:
                             validation_data, test_data = train_test_split(
                                 validation_data,
-                                test_size=(test_percentage / (validation_percentage + test_percentage)))
+                                test_size=(test_percentage / (validation_percentage + test_percentage)), shuffle=False)
                     else:
                         train_data = aligned_spikes
 

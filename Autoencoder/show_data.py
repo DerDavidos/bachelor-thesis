@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -7,29 +9,57 @@ from configs import simulation as config
 def show_all_spikes() -> None:
     """ Plots all spikes from the simulation defined in config.py """
 
-    spike_path = f'spikes/{config.SIMULATION_TYPE}/n_cluster_{config.N_CLUSTER}/' \
-                 f'simulation_{config.SIMULATION_NUMBER}.npy'
+    functions = ['U_SA* exp(-t/tau);',
+                 '-U_SA* exp(-t/tau)',
+                 'U_SA* n* gaussmf(t, [0.6*tau t(end)/2])',
+                 'U_SA* (n*exp(-t/tau) - (1-n)*sin(2*pi*f*t))',
+                 # 'U0 = (n-1)*(exp(t/(2*tau))-1)'
+                 # 'A = find(U0 <= n-1)'
+                 # 'U0(A) = 0;'
+                 'U_SA*(U0+exp(-(t-t(A(1)))/tau).* heaviside(t-t(A(1)))-(1-n)*sin(2*pi*f*t))']
 
-    with open(spike_path, 'rb') as file:
+    path = f'spikes/{config.SIMULATION_TYPE}/n_cluster_{config.N_CLUSTER}/' \
+           f'simulation_{config.SIMULATION_NUMBER}'
+
+    with open(f'{path}/spikes.npy', 'rb') as file:
         aligned_spikes = np.load(file)
+
+    labels = None
+    if os.path.isfile(f'{path}/labels.npy'):
+        with open(f'{path}/labels.npy', 'rb') as file:
+            labels = np.load(file)
 
     print(aligned_spikes.shape)
 
     min_in_test_data = np.min(aligned_spikes)
     max_in_test_data = np.max(aligned_spikes)
 
-    plt.title(f'{spike_path}')
+    plt.title(f'{path}')
     plt.ylim(np.amin(aligned_spikes), np.amax(aligned_spikes))
 
-    for x in aligned_spikes:
-        plt.plot(x)
-    plt.plot(np.mean(aligned_spikes, axis=0), color='yellow')
+    for spike in aligned_spikes:
+        plt.plot(spike)
     plt.show()
 
-    plt.plot(np.mean(aligned_spikes, axis=0), color='black')
-    plt.show()
+    if labels is not None:
+        mean_per_cluster = []
+        for label in set(labels):
+            all_spikes_in_label = []
+            for i, spike in enumerate(aligned_spikes):
+                if label == labels[i]:
+                    all_spikes_in_label.append(spike)
+                    plt.plot(spike)
+            plt.plot(np.mean(all_spikes_in_label, axis=0), color='black')
+            mean_per_cluster.append(np.mean(all_spikes_in_label, axis=0))
+            plt.title(f'{label}, number: {len(all_spikes_in_label)}')
+            plt.show()
 
-    for i in range(5):
+        for i, spike in enumerate(mean_per_cluster):
+            plt.plot(spike, label=functions[i])
+        plt.legend()
+        plt.show()
+
+    for i in range(0):
         plt.plot(aligned_spikes[i])
         plt.ylim(min_in_test_data, max_in_test_data)
         plt.title(f'Example spike {i}')

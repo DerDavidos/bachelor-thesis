@@ -45,8 +45,9 @@ def evaluate_performance_per_sparsity() -> None:
     plt.ylabel('Euclidian Distance')
     plt.xlabel('Number of Cluster (different Spike types)')
     plt.savefig(
-        f'images/per_cluster/euclidian_{config.SIMULATION_TYPE}{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ',
-                                                                                                                ''),
+        f'images/per_cluster/euclidian_{config.TRAIN_SIMULATION_TYPE}{config.CLUSTER}{config.DIMENSIONS}.png'.replace(
+            ' ',
+            ''),
         bbox_inches='tight')
     plt.clf()
 
@@ -61,7 +62,7 @@ def evaluate_performance_per_sparsity() -> None:
     plt.ylabel('KL-Divergence')
     plt.xlabel('Number of Cluster (different Spike types)')
     plt.savefig(
-        f'images/per_cluster/kl_{config.SIMULATION_TYPE}{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ', ''),
+        f'images/per_cluster/kl_{config.TRAIN_SIMULATION_TYPE}{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ', ''),
         bbox_inches='tight')
     plt.clf()
 

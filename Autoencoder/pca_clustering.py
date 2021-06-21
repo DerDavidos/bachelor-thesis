@@ -41,6 +41,10 @@ class PcaClusterer:
         predictions = self.kmeans.predict(transformed_test_data)
         return np.array(predictions)
 
+    def fit_kmeans(self, data: np.array) -> None:
+        encoded_data = self.pca.transform(data)
+        self.kmeans.fit(encoded_data)
+
 
 def main(evaluate: bool) -> None:
     """ Performs clustering using pca to reduce dimension on the test data set for the simulation defined in config.py

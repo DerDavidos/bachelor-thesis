@@ -3,7 +3,7 @@
 SIMULATION_TYPE = 'own_generated'
 N_CLUSTER_SIMULATION = 3
 SIMULATION_NUMBER = 0
-EMBEDDED_DIMENSION = 8
+EMBEDDED_DIMENSION = 12
 TRAINED_WITH_CLUSTERING = True
 """"""""""""" Test Model Settings """""""""""""""""""
 
