@@ -1,3 +1,8 @@
+import copy
+import itertools
+import os
+from pathlib import Path
+
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
@@ -38,13 +43,13 @@ def evaluate_clustering(data: np.array, labels: list, predictions: list) -> [np.
             kl_in_cluster = []
             for i1, spike1 in enumerate(cluster):
 
-                spike1 = spike1 + kl_addition
+                kl_spike1 = spike1 + kl_addition
                 for i2, spike2 in enumerate(cluster):
                     if i1 != i2:
-                        spike2 = spike2 + kl_addition
+                        kl_spike2 = spike2 + kl_addition
                         euclidean_in_cluster.append(np.linalg.norm(spike1 - spike2))
 
-                        kl_in_cluster.append(entropy(spike1, spike2))
+                        kl_in_cluster.append(entropy(kl_spike1, kl_spike2))
 
             euclidean_per_cluster.append(np.mean(euclidean_in_cluster))
 
@@ -111,7 +116,7 @@ def evaluate_cluster_dimension(cluster: int, dimension: int) -> [list, list]:
     # Load train and test data
     data_path = f'data/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TRAIN_SIMULATION_NUMBER}'
     train_data, _, test_data = data_loader.load_train_val_test_data(data_path)
-    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE or config.TRAIN_SIMULATION_NUMBER != config.TEST_SIMULATION_NUMBER:
         data_path = f'data/{config.TEST_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}'
         fit_data, _, test_data = data_loader.load_train_val_test_data(data_path)
 
@@ -119,7 +124,7 @@ def evaluate_cluster_dimension(cluster: int, dimension: int) -> [list, list]:
     model = torch.load(f'models/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/'
                        f'simulation_{config.TRAIN_SIMULATION_NUMBER}_not_cluster_trained/sparse_{dimension}/model.pth')
     clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
-    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE or config.TRAIN_SIMULATION_NUMBER != config.TEST_SIMULATION_NUMBER:
         clusterer.fit_kmeans(fit_data)
     predictions = clusterer.predict(test_data)
     euclidean_per_cluster_0, kl_per_cluster_0 = \
@@ -129,7 +134,7 @@ def evaluate_cluster_dimension(cluster: int, dimension: int) -> [list, list]:
     model = torch.load(f'models/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/'
                        f'simulation_{config.TRAIN_SIMULATION_NUMBER}_cluster_trained/sparse_{dimension}/model.pth')
     clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
-    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE or config.TRAIN_SIMULATION_NUMBER != config.TEST_SIMULATION_NUMBER:
         clusterer.fit_kmeans(fit_data)
     predictions = clusterer.predict(test_data)
     euclidean_per_cluster_1, kl_per_cluster_1 = \
@@ -137,7 +142,7 @@ def evaluate_cluster_dimension(cluster: int, dimension: int) -> [list, list]:
 
     # PCA
     pca_clusterer = pca_clustering.PcaClusterer(n_components=dimension, n_cluster=cluster, train_data=train_data)
-    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE or config.TRAIN_SIMULATION_NUMBER != config.TEST_SIMULATION_NUMBER:
         pca_clusterer.fit_kmeans(fit_data)
     predictions = pca_clusterer.predict(test_data)
     euclidean_per_cluster_2, kl_per_cluster_2 = \
@@ -160,7 +165,7 @@ def clustering_without_reduction() -> [float, float]:
         print(f'Evaluating: Cluster: {cluster}')
 
         # Load train and test data
-        if config.TEST_SIMULATION_TYPE == config.TRAIN_SIMULATION_TYPE:
+        if config.TEST_SIMULATION_TYPE == config.TRAIN_SIMULATION_TYPE and config.TRAIN_SIMULATION_NUMBER == config.TEST_SIMULATION_NUMBER:
             data_path = f'data/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TRAIN_SIMULATION_NUMBER}'
             train_data, _, test_data = data_loader.load_train_val_test_data(data_path)
         else:
@@ -184,8 +189,63 @@ def clustering_without_reduction() -> [float, float]:
     return np.mean(euclidean), np.mean(kl)
 
 
+def save_plot(titel, pca, separate_training, combined_training, no_pre, fig_path, label, x_values):
+    fig_dir = '/'.join(fig_path.split('/')[:-1])
+
+    if not os.path.exists(fig_dir):
+        Path(fig_dir).mkdir(parents=True)
+
+    plt.title(titel)
+    plt.scatter(x_values, pca, label='PCA', marker='s', linewidth=2, color='cyan')
+    plt.scatter(x_values, separate_training, label='Autoencoder Separate Training', color='orange',
+                marker='^', linewidth=1)
+    plt.scatter(x_values, combined_training, label='Autoencoder Combined Training',
+                marker='x', color='green', linewidth=2)
+    if no_pre is not None:
+        plt.axhline(y=no_pre, label='No Feature Extraction', linestyle='dashed', color='red', linewidth=1)
+
+    plt.legend()
+
+    plt.xticks(x_values)
+
+    plt.xlim([x_values[0] - 0.5, x_values[-1] + 0.5])
+    # plt.ylim([0, None])
+    plt.ylabel(label[0])
+    plt.xlabel(label[1])
+    plt.savefig(fig_path, bbox_inches='tight')
+    plt.clf()
+
+
 def __evaluate_accuracy(predictions, labels):
-    pass
+    new_labels = []
+    plus = 0
+    if 0 in set(labels):
+        plus = 1
+    for x in labels:
+        new_labels.append(int(x + plus))
+    labels = np.array(new_labels)
+
+    new_predictions = []
+    plus = 0
+    if 0 in set(predictions):
+        plus = 1
+    for x in predictions:
+        new_predictions.append(int(x + plus))
+    predictions = np.array(new_predictions)
+    max_accuracy = 0
+
+    for pers in list(itertools.permutations(set(predictions))):
+        predictions_copy = copy.copy(predictions)
+        for i in set(predictions):
+            predictions_copy[predictions_copy == i] = -i
+        for i in set(predictions):
+            predictions_copy[predictions_copy == -i] = pers[i - 1]
+
+        acc = (np.count_nonzero(predictions_copy == labels))
+        if acc > max_accuracy:
+            max_accuracy = acc
+    print(max_accuracy, len(predictions))
+    return max_accuracy / len(predictions)
 
 
 def evaluate_accuracy(cluster, dimension):
@@ -195,23 +255,23 @@ def evaluate_accuracy(cluster, dimension):
     data_path = f'data/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TRAIN_SIMULATION_NUMBER}'
     train_data, val_data, test_data = data_loader.load_train_val_test_data(data_path)
 
-    label_path = f'spikes/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TRAIN_SIMULATION_NUMBER}'
+    label_path = f'spikes/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TRAIN_SIMULATION_NUMBER}/labels.npy'
     with open(label_path, 'rb') as file:
-        labels = np.load(file, allow_pickle=True)[len(train_data) + len(val_data)]
+        labels = np.load(file, allow_pickle=True)[len(train_data) + len(val_data):]
 
-    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE or config.TRAIN_SIMULATION_NUMBER != config.TEST_SIMULATION_NUMBER:
         data_path = f'data/{config.TEST_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}'
         fit_data, val_data, test_data = data_loader.load_train_val_test_data(data_path)
 
-        label_path = f'spikes/{config.TEST_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}'
+        label_path = f'spikes/{config.TEST_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}/labels.npy'
         with open(label_path, 'rb') as file:
-            labels = np.load(file, allow_pickle=True)[len(fit_data) + len(val_data)]
+            labels = np.load(file, allow_pickle=True)[len(fit_data) + len(val_data):]
 
     # Autoencoder with seperate training
     model = torch.load(f'models/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/'
                        f'simulation_{config.TRAIN_SIMULATION_NUMBER}_not_cluster_trained/sparse_{dimension}/model.pth')
     clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
-    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE or config.TRAIN_SIMULATION_NUMBER != config.TEST_SIMULATION_NUMBER:
         clusterer.fit_kmeans(fit_data)
     predictions = clusterer.predict(test_data)
     accuracy_seperate = __evaluate_accuracy(predictions=predictions, labels=labels)
@@ -220,16 +280,43 @@ def evaluate_accuracy(cluster, dimension):
     model = torch.load(f'models/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/'
                        f'simulation_{config.TRAIN_SIMULATION_NUMBER}_cluster_trained/sparse_{dimension}/model.pth')
     clusterer = autoencoder_clustering.AutoencoderClusterer(model=model, n_cluster=cluster, train_data=train_data)
-    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE or config.TRAIN_SIMULATION_NUMBER != config.TEST_SIMULATION_NUMBER:
         clusterer.fit_kmeans(fit_data)
     predictions = clusterer.predict(test_data)
     accuracy_combined = __evaluate_accuracy(predictions=predictions, labels=labels)
 
     # PCA
     pca_clusterer = pca_clustering.PcaClusterer(n_components=dimension, n_cluster=cluster, train_data=train_data)
-    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE or config.TRAIN_SIMULATION_NUMBER != config.TEST_SIMULATION_NUMBER:
         pca_clusterer.fit_kmeans(fit_data)
     predictions = pca_clusterer.predict(test_data)
     accuracy_pca = __evaluate_accuracy(predictions=predictions, labels=labels)
 
     return accuracy_seperate, accuracy_combined, accuracy_pca
+
+
+def evaluate_accuracy_without_reduction(cluster):
+    # Load train and test data
+    data_path = f'data/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TRAIN_SIMULATION_NUMBER}'
+    train_data, val_data, test_data = data_loader.load_train_val_test_data(data_path)
+
+    label_path = f'spikes/{config.TRAIN_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TRAIN_SIMULATION_NUMBER}/labels.npy'
+    with open(label_path, 'rb') as file:
+        labels = np.load(file, allow_pickle=True)[len(train_data) + len(val_data):]
+
+    if config.TEST_SIMULATION_TYPE != config.TRAIN_SIMULATION_TYPE:
+        data_path = f'data/{config.TEST_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}'
+        fit_data, val_data, test_data = data_loader.load_train_val_test_data(data_path)
+
+        label_path = f'spikes/{config.TEST_SIMULATION_TYPE}/n_cluster_{cluster}/simulation_{config.TEST_SIMULATION_NUMBER}/labels.npy'
+        with open(label_path, 'rb') as file:
+            labels = np.load(file, allow_pickle=True)[len(fit_data) + len(val_data):]
+
+    kmeans = KMeans(n_clusters=cluster)
+
+    kmeans.fit(train_data)
+
+    predictions = kmeans.predict(test_data)
+    accuracy = __evaluate_accuracy(predictions=predictions, labels=labels)
+
+    return accuracy

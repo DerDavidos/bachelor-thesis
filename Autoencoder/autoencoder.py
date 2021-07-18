@@ -80,11 +80,11 @@ class Decoder(nn.Module):
 
         self.up_sample = nn.Upsample(output_dim)
 
-        self.transpose_convolution_1d_2 = nn.ConvTranspose1d(1, 4, kernel_size=5, padding=2)
+        self.transpose_convolution_1d_2 = nn.ConvTranspose1d(1, 8, kernel_size=5, padding=2)
 
-        self.transpose_convolution_1d_1 = nn.ConvTranspose1d(4, 8, kernel_size=9, padding=4)
+        self.transpose_convolution_1d_1 = nn.ConvTranspose1d(8, 4, kernel_size=9, padding=4)
 
-        self.transpose_convolution_1d_resize = nn.ConvTranspose1d(8, 1, kernel_size=1)
+        self.transpose_convolution_1d_resize = nn.ConvTranspose1d(4, 1, kernel_size=1)
 
     def forward(self, x: torch.Tensor, batch_size: int) -> torch.Tensor:
         """ Propagates the data in Tensor x through the Decoder
@@ -101,7 +101,7 @@ class Decoder(nn.Module):
         # Up sampling
         x = self.up_sample(x)
 
-        # De-Convolution\
+        # De-Convolution
         x = self.transpose_convolution_1d_2(x)
 
         x = self.transpose_convolution_1d_1(x)

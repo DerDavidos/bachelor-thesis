@@ -4,45 +4,44 @@ function [ret, label] = sendDataToPython(sim_type, dataNo)
 
     %% --- Variables
     %Dateneingang --- 1 = MATLAB-Generator (eigen), 2,3 = MATLAB-Daten (Simulation), 4 = Messungen (Seidl), 5 = Messung (CRCNS, HC1)
-    Settings.loadDataType = sim_type;
-    %Modus des SpikeSortings --- 0 = offline, 1 = online
-    Settings.mode = 0;
+    Settings.loadDataType = 1;
 
-    Settings.noCluster = 2;
+    %Verfahren --- 1 = PCA, 2 = Cross-Correlation, 3 = Template Matching, 4 =
+    %Ternäre-Gewichtung, 5 = Ternäre Gewichtung, 6 = first and second derivative extrema (FSDE)
+    Settings.typeFE = 1;
+    Settings.noCluster = 5;
     %Störsignal mit lokalem Feldpotential --- 0 = aus, 1 = ein
-    Settings.enLFP = 1;
+    Settings.enLFP = 0;
     Settings.checkLabeling = 0;
 
-    Settings.fFIR = [0.2 5]* 1e3;
+    Settings.fFIR = [0.2 6]* 1e3;
     % Parameter für das Fenstern beim Spike-Frame Generator
-    Settings.nStart = 0; 
+    Settings.nStart = 0;
     Settings.nFrameSpike = 60;
     Settings.nStartAlign = 16;
     Settings.nFrameAlign = 48;
     Settings.nSNR = 80;
 
     % Parameter für Filterung (0: keine, 1: FIR, 2: Butter-IIR, 3: Ellip-IIR, 4: Cheby-IIR Typ 1, 5: Savitzky-Golay-FIR)
-    Settings.selFILT = 1;
-    Settings.nFIR = 501;
-    Settings.nIIR = 2;
+    Settings.selFILT = 5;
+    Settings.nFIR = 100;
+    Settings.nIIR = 1;
     % Parameter beim SpikeDetection
-    Settings.ThresholdSDA = 1.3e-10;
+    Settings.ThresholdSDA = 1.2e-10;
 
     %% --- Interface zum Laden eines Datensatzen
     cd Funktionen;
     pbar = ProgressBar(8, "Progress");
-    switch(Settings.loadDataType)
+    switch(sim_type)
         case 1
-            load('../0_Rohdaten/5Cluster.mat');
+            load('../0_Rohdaten/2Cluster.mat');
             SampleRate = HW_Props.ADU_SampleRate;
             GaindB = HW_Props.PreAmp_GaindB;
             Labeling = GroundTruth;
             U_EL = U_EL/GaindB;
             clear GroundTruth HW_Props;
         case 2 % dataNo <= 95
-            dataNo = 1;
-            file = ['../1_SimDaten/simulation_', num2str(dataNo), '.mat'];
-            load(file);
+            load(['../1_SimDaten/simulation_', num2str(dataNo), '.mat']);
             load('../1_SimDaten/ground_truth.mat');
             SampleRate = 24e3;
             GaindB = 0;
@@ -50,9 +49,8 @@ function [ret, label] = sendDataToPython(sim_type, dataNo)
             Labeling = [spike_first_sample{dataNo}; spike_classes{dataNo}];
             RefSpikes = su_waveforms{dataNo};
             clear data spike_classes spike_first_sample su_waveforms;
-        case 3 % dataNo <= 5
-            file = ['../1_SimDaten_Neu/simulation_', num2str(dataNo), '.mat'];
-            load(file);
+        case 3 % dataNo <= 5   
+            load(['../1_SimDaten_Neu/simulation_', num2str(dataNo), '.mat']);
             U_EL = 0.5e-6*data;
             SampleRate = 1e3/samplingInterval;
             GaindB = 0;
@@ -78,7 +76,16 @@ function [ret, label] = sendDataToPython(sim_type, dataNo)
 
     %% --- Spike Sorting
     Time = (0:1:length(U_EL)-1)/SampleRate;
-    Uin = U_EL;
+    if(Settings.enLFP)
+        f0 = 3.2;   U0 = 0.5e-3;  nLFP = 10;
+        U_LFP = 0*Time;
+        for i=1:1:nLFP
+            U_LFP = U_LFP + (nLFP-i-1)/nLFP* sin(2*pi*i*f0*Time);
+        end
+        Uin = U0/max(U_LFP)*U_LFP + U_EL;
+    else
+        Uin = U_EL;
+    end
 
     % --- Signale vordeklarieren
     U_FILT = 0*Time;
@@ -182,7 +189,7 @@ function [ret, label] = sendDataToPython(sim_type, dataNo)
     end
     clear SpikeIn max_val max_cnt max_pos k PlaceHolder dX;
     pbar.update(4, "Alignment done");
-    ret = Frame_SpikeAlign * 1e6;
+    ret = Frame_SpikeAlign * 1e4;
     label = Labeling;
 
 end

@@ -29,14 +29,14 @@ def determinate_number_of_cluster(data) -> int:
             evaluate_functions.evaluate_clustering(data=data, labels=list(set(kmeans.labels_)), predictions=predictions)
 
         wcss.append(np.mean(kl_per_cluster))
-    predicted_number_of_cluster = 2
+    predicted_n_cluster = 2
     print(wcss)
 
-    while predicted_number_of_cluster < max_cluster - 2 and \
-            wcss[predicted_number_of_cluster] < wcss[predicted_number_of_cluster + 1] * 1.25:
-        predicted_number_of_cluster += 1
-
-    return predicted_number_of_cluster
+    while predicted_n_cluster < max_cluster - 2 and \
+            (wcss[predicted_n_cluster]) < wcss[predicted_n_cluster + 1] * 1.5:
+        predicted_n_cluster += 1
+    print(predicted_n_cluster)
+    return predicted_n_cluster
 
 
 def plot_predicted_and_real_number_of_cluster() -> None:
@@ -56,8 +56,8 @@ def plot_predicted_and_real_number_of_cluster() -> None:
 
     # plt.scatter(config.CLUSTER, config.CLUSTER)
     plt.scatter(config.CLUSTER, plot_cluster)
-    plt.ylim([1.5, None])
-    plt.xlim([1.5, None])
+    plt.ylim([1.5, config.CLUSTER[-1] + 0.5])
+    plt.xlim([1.5, config.CLUSTER[-1] + 0.5])
     plt.plot([0, 10], [0, 10])
     plt.ylabel('Predicted Number of Cluster')
     plt.xlabel('Real Number of CLuster')

@@ -9,15 +9,6 @@ from configs import simulation as config
 def show_all_spikes() -> None:
     """ Plots all spikes from the simulation defined in config.py """
 
-    functions = ['U_SA* exp(-t/tau);',
-                 '-U_SA* exp(-t/tau)',
-                 'U_SA* n* gaussmf(t, [0.6*tau t(end)/2])',
-                 'U_SA* (n*exp(-t/tau) - (1-n)*sin(2*pi*f*t))',
-                 # 'U0 = (n-1)*(exp(t/(2*tau))-1)'
-                 # 'A = find(U0 <= n-1)'
-                 # 'U0(A) = 0;'
-                 'U_SA*(U0+exp(-(t-t(A(1)))/tau).* heaviside(t-t(A(1)))-(1-n)*sin(2*pi*f*t))']
-
     path = f'spikes/{config.SIMULATION_TYPE}/n_cluster_{config.N_CLUSTER}/' \
            f'simulation_{config.SIMULATION_NUMBER}'
 
@@ -37,9 +28,9 @@ def show_all_spikes() -> None:
     plt.title(f'{path}')
     plt.ylim(np.amin(aligned_spikes), np.amax(aligned_spikes))
 
-    for spike in aligned_spikes:
-        plt.plot(spike)
-    plt.show()
+    # for spike in aligned_spikes:
+    #    plt.plot(spike)
+    # plt.show()
 
     if labels is not None:
         mean_per_cluster = []
@@ -55,7 +46,7 @@ def show_all_spikes() -> None:
             plt.show()
 
         for i, spike in enumerate(mean_per_cluster):
-            plt.plot(spike, label=functions[i])
+            plt.plot(spike, label=f'f{i + 1}')
         plt.legend()
         plt.show()
 

@@ -9,7 +9,8 @@ import os
 """"""""""""""""""""""""""""""""
 # martinez, own_generated
 SIMULATION_TYPES = [
-    # 'martinez',
+    #'martinez',
+    #'pedreira'
     'own_generated'
 ]
 """"""""""""""""""""""""""""""""
@@ -30,13 +31,60 @@ def get_data_from_matlab(simulation_type: str):
             eng = matlab.engine.start_matlab()
 
             # adding one for Matlab counting
-            spikes, _ = eng.sendDataToPython(3, simulation + 1, nargout=2)
+            spikes, labels = eng.sendDataToPython(3, simulation + 1, nargout=2)
 
             spikes = np.array(spikes)
+
+            labels = labels[1]
+            if len(labels) != len(spikes):
+                raise Error(
+                    f'Spike and labels lenght are not equal, len(spikes): {len(spikes)}, len(labels): {len(labels)}')
+            print(f'Number of Cluster: {len(set(labels))}')
 
             Path(f'{path}/simulation_{simulation}').mkdir(parents=True, exist_ok=True)
 
             np.save(f'{path}/simulation_{simulation}/spikes', spikes)
+            np.save(f'{path}/simulation_{simulation}/labels', np.array(labels))
+
+            print(spikes.shape)
+            print(f'Saved {simulation}')
+            eng.close()
+
+    if simulation_type == 'pedreira':
+
+        path = f'{pathlib.Path(__file__).parent.absolute()}/../Autoencoder/spikes/pedreira'
+
+        for simulation in range(0, 11):
+            eng = matlab.engine.start_matlab()
+
+            # adding one for Matlab counting
+            spikes, labels = eng.sendDataToPython(2, simulation + 1, nargout=2)
+
+            spikes = np.array(spikes)
+
+            labels = labels[1]
+            if len(labels) != len(spikes):
+                raise Error(
+                    f'Spike and labels lenght are not equal, len(spikes): {len(spikes)}, len(labels): {len(labels)}')
+
+            new_spikes = []
+            new_labels = []
+
+            for i in range(len(spikes)):
+                if labels[i] != 0:
+                    new_spikes.append(spikes[i])
+                    new_labels.append(labels[i])
+            spikes = np.array(new_spikes)
+            labels = np.array(new_labels)
+
+            print(f'Number of Cluster: {len(set(labels))}')
+
+            cluster_path = f'{path}/n_cluster_{len(set(labels))}'
+
+            Path(f'{cluster_path}/simulation_{simulation}').mkdir(parents=True, exist_ok=True)
+
+            np.save(f'{cluster_path}/simulation_{simulation}/spikes', spikes)
+            np.save(f'{cluster_path}/simulation_{simulation}/labels', np.array(labels))
 
             print(spikes.shape)
             print(f'Saved {simulation}')

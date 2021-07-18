@@ -1,5 +1,4 @@
 import numpy as np
-from matplotlib import pyplot as plt
 
 import evaluate_functions
 from configs import evaluate as config
@@ -33,38 +32,26 @@ def evaluate_performance_per_sparsity() -> None:
         kl_combined_training.append(np.mean(kl_combined_training_intern))
         kl_pca.append(np.mean(kl_pca_intern))
 
-    plt.title(f'Reduced Dimension size: {config.DIMENSIONS}'.replace('[', '').replace(']', ''))
-    plt.scatter(config.CLUSTER, euclidean_pca, label='PCA', marker='s', linewidth=2, color='cyan')
-    plt.scatter(config.CLUSTER, euclidean_separate_training, label='Autoencoder Separate Training', color='orange',
-                marker='^', linewidth=1)
-    plt.scatter(config.CLUSTER, euclidean_combined_training, label='Autoencoder Combined Training',
-                marker='x', color='green', linewidth=2)
+    titel = f'Reduced Dimension size: {config.DIMENSIONS}'
 
-    plt.legend()
-    plt.ylim([0, None])
-    plt.ylabel('Euclidian Distance')
-    plt.xlabel('Number of Cluster (different Spike types)')
-    plt.savefig(
-        f'images/per_cluster/euclidian_{config.TRAIN_SIMULATION_TYPE}{config.CLUSTER}{config.DIMENSIONS}.png'.replace(
-            ' ',
-            ''),
-        bbox_inches='tight')
-    plt.clf()
+    fig_path = f'images/per_cluster/{config.TRAIN_SIMULATION_NUMBER}{config.TRAIN_SIMULATION_TYPE}_' \
+               f'{config.TEST_SIMULATION_NUMBER}{config.TEST_SIMULATION_TYPE}'
 
-    plt.title(f'Reduced Dimension size: {config.DIMENSIONS}'.replace('[', '').replace(']', ''))
-    plt.scatter(config.CLUSTER, kl_pca, label='PCA', marker='s', linewidth=2, color='cyan')
-    plt.scatter(config.CLUSTER, kl_separate_training, label='Autoencoder Separate Training', color='orange',
-                marker='^', linewidth=1)
-    plt.scatter(config.CLUSTER, kl_combined_training, label='Autoencoder Combined Training', color='green',
-                marker='x', linewidth=2)
-    plt.legend()
-    plt.ylim([0, None])
-    plt.ylabel('KL-Divergence')
-    plt.xlabel('Number of Cluster (different Spike types)')
-    plt.savefig(
-        f'images/per_cluster/kl_{config.TRAIN_SIMULATION_TYPE}{config.CLUSTER}{config.DIMENSIONS}.png'.replace(' ', ''),
-        bbox_inches='tight')
-    plt.clf()
+    evaluate_functions.save_plot(titel=titel.replace('[', '').replace(']', ''),
+                                 pca=euclidean_pca, separate_training=euclidean_separate_training,
+                                 combined_training=euclidean_combined_training, no_pre=None,
+                                 fig_path=f"{fig_path}/euclidean_{config.CLUSTER}{config.DIMENSIONS}.png".replace(' ',
+                                                                                                                  ''),
+                                 label=['Number of Cluster (different Spike types)', 'KL-Divergence'],
+                                 x_values=config.CLUSTER)
+
+    evaluate_functions.save_plot(titel=titel.replace('[', '').replace(']', ''),
+                                 pca=kl_pca, separate_training=kl_separate_training,
+                                 combined_training=kl_combined_training, no_pre=None,
+                                 fig_path=f"{fig_path}/kl_{config.CLUSTER}{config.DIMENSIONS}.png".replace(' ',
+                                                                                                           ''),
+                                 label=['Number of Cluster (different Spike types)', 'KL-Divergence'],
+                                 x_values=config.CLUSTER)
 
 
 if __name__ == '__main__':

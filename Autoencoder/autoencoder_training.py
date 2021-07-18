@@ -1,3 +1,4 @@
+import warnings
 from typing import Union
 
 import numpy as np
@@ -41,30 +42,32 @@ class ClusteringLoss:
         kl_addition = np.min(data) * -1 + 0.00001
         kl_per_cluster = []
 
-        for label in set(self.kmeans.labels_):
-            cluster = []
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            for label in set(self.kmeans.labels_):
+                cluster = []
 
-            for j, spike in enumerate(data):
-                if self.kmeans.labels_[j] == label:
-                    cluster.append(spike)
+                for j, spike in enumerate(data):
+                    if self.kmeans.labels_[j] == label:
+                        cluster.append(spike)
 
-            if len(cluster) > 1:
-                kl_in_cluster = []
-                for i1, spike1 in enumerate(cluster):
-                    spike1 = spike1 + kl_addition
-                    for i2, spike2 in enumerate(cluster):
-                        if i1 != i2:
-                            spike2 = spike2 + kl_addition
-                            kl_in_cluster.append(entropy(spike1, spike2))
-                kl_per_cluster.append(np.mean(kl_in_cluster) * 100)
-            else:
-                kl_per_cluster.append(0)
+                if len(cluster) > 1:
+                    kl_in_cluster = []
+                    for i1, spike1 in enumerate(cluster):
+                        spike1 = spike1 + kl_addition
+                        for i2, spike2 in enumerate(cluster):
+                            if i1 != i2:
+                                spike2 = spike2 + kl_addition
+                                kl_in_cluster.append(entropy(spike1, spike2))
+                    kl_per_cluster.append(np.mean(kl_in_cluster))
+                else:
+                    kl_per_cluster.append(0)
 
-        cluster_loss = np.mean(kl_per_cluster) * 35
+        cluster_loss = np.mean(kl_per_cluster)
 
         # Combine losses
         loss = reconstruction_loss + cluster_loss
-
+        # print(float(reconstruction_loss), (cluster_loss), float(cluster_loss) / float(reconstruction_loss))
         return loss
 
 
@@ -148,7 +151,7 @@ def train_model(model: Autoencoder, train_dataset: list, validation_dataset: lis
     update_percentage = max(1, int(len(train_dataset) / 100))
     best_epoch = 0
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=5e-3)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
     # Use different criterion to get loss value depending it should include the clustering loss
     if not train_with_clustering:
